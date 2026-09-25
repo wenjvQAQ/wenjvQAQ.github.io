@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>AirPlay 投屏「能搜到但连不上」——路由跃点数把广播送到了错误的网卡 | wenjvQAQ 的技术笔记</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="shortcut icon" href="/imgs/shortcut-icon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="/css/public.css" />
+  <link rel="stylesheet" href="/css/layout.css" />
+  <link rel="stylesheet" href="/css/iconfont.css" />
+  <link rel="stylesheet" href="/css/APlayer.min.css" />
+  <script src="/js/APlayer.min.js"></script>
+  <script src="/js/jquery.min.js"></script>
+  <script src="/js/jquery.pjax.min.js"></script>
+
+  
+  <script>
+    document.title = "AirPlay 投屏「能搜到但连不上」——路由跃点数把广播送到了错误的网卡 | wenjvQAQ 的技术笔记"
+  </script>
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<style>
+  .load {
+    width: 100%;
+    height: 100vh;
+    background-color: rgb(37, 35, 40);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    z-index: 9999;
+  }
+  .load-circle {
+    width: 80px;
+    height: 80px;
+    border: 8px solid orange;
+    border-bottom-color: transparent;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: rotate 1s linear infinite;
+    filter: drop-shadow(0 0 3px orange);
+  }
+  .load-circle-inner {
+    width: 40px;
+    height: 40px;
+    border: 8px solid orange;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: rotate-reverse .5s linear infinite;
+  }
+  .load-text {
+    margin-top: 20px;
+    font-size: 24px;
+    color: orange;
+    display: flex;
+  }
+  .load-text span {
+    margin: 0 5px;
+    text-shadow: 5px 5px 5px orange;
+    animation: move 1s linear infinite;
+  }
+  .load-text span:nth-child(1) {
+    animation-delay: -0.6s;
+  }
+  .load-text span:nth-child(2) {
+    animation-delay: -0.5s;
+  }
+  .load-text span:nth-child(3) {
+    animation-delay: -0.4s;
+  }
+  .load-text span:nth-child(4) {
+    animation-delay: -0.3s;
+  }
+  .load-text span:nth-child(5) {
+    animation-delay: -0.2s;
+  }
+  .load-text span:nth-child(6) {
+    animation-delay: -0.1s;
+  }
+  @keyframes rotate {
+    0% { transform: rotate(0); }
+    100% { transform: rotate(360deg); }
+  }
+  @keyframes rotate-reverse {
+    0% { transform: rotate(0); }
+    100% { transform: rotate(-360deg); }
+  }
+  @keyframes move {
+    0% { transform: translateY(0%) rotate(0) scale(1); }
+    20% { transform: translateY(20%) rotate(10deg) scale(1.2); }
+    80% { transform: translateY(-10%) rotate(-20deg) scale(.8);}
+    100% { transform: translateY(0) rotate(0) scale(1); }
+  }
+
+  .progress {
+    position: fixed;
+    left: 0; top: 0;
+    width: 0;
+    height: 3px;
+    background-color: green;
+    transition: all cubic-bezier(0.215, 0.610, 0.355, 1) .1s;
+    z-index: 9999;
+  }
+
+  .to-up {
+    animation: toUp .5s 1;
+  }
+  .gray {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100vh;
+    z-index: 9999;
+    display: none;
+    pointer-events: none;
+    background-color: #000;
+    mix-blend-mode: color;
+  }
+  @keyframes toUp {
+    from { transform: translateY(15px); opacity: 0; }
+    to { transform: translateY(0) ; opacity: 1; }
+  }
+</style>
+<body>
+  <div id="load" class="load">
+    <div class="load-circle">
+      <div class="load-circle-inner"></div>
+    </div>
+    <p class="load-text">
+      <span>L</span>
+      <span>O</span>
+      <span>A</span>
+      <span>D</span>
+      <span>I</span>
+      <span>N</span>
+      <span>G</span>
+    </p>
+  </div>
+  <div id="container" class="container w-100 vh-100" style="display: none;">
+    <header class="header">
+  <div class="header-wrapper">
+    <div class="header-left">
+      <div class="header-search">
+        <input id="search-input" type="text" class="header-search--input" placeholder="请输入要检索的文章标题" />
+        <span id="search-btn" class="header-search--icon"><i class="iconfont icon-sousuo"></i></span>
+      </div>
+      <div id="search-layer" class="header-search--layer hidden">
+        <p class="title">
+          <span>以下是搜索内容：</span>
+          <span id="close-layer-btn">关闭</span>
+        </p>
+        <ul>
+        </ul>
+      </div>
+    </div>
+    <div class="header-right">
+      <ul class="header-menu">
+        <li>
+          <a href="https://wenjvqaq.github.io/">
+            <i class="header-menu--icon iconfont icon-shouye"></i>
+            <span class="header-menu--span">首页</span>
+          </a>
+        </li>
+        <li>
+          <a href="https://wenjvqaq.github.io/log">
+            <i class="header-menu--icon iconfont icon-rizhi"></i>
+            <span class="header-menu--span">日志</span>
+          </a>
+        </li>
+        <li>
+          <a href="https://wenjvqaq.github.io/link">
+            <i class="header-menu--icon iconfont icon-youqinglianjie"></i>
+            <span class="header-menu--span">友情链接</span>
+          </a>
+        </li>
+        <li>
+          <a href="https://wenjvqaq.github.io/about">
+            <i class="header-menu--icon iconfont icon-guanyuwomen"></i>
+            <span class="header-menu--span">关于我</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</header>
+
+<script>
+  const ipt = document.querySelector('#search-input')
+  const btn = document.querySelector('#search-btn')
+  const layer = document.querySelector('#search-layer')
+  const posts = JSON.parse(`[{"title":"AirPlay 投屏「能搜到但连不上」——路由跃点数把广播送到了错误的网卡","path":"2026/09/25/airplay-wrong-interface/"},{"title":"PySide6 最隐蔽的 bug：QObject worker 被垃圾回收，程序「什么都没发生」","path":"2026/09/25/pyside6-qobject-worker-gc/"},{"title":"图片去重不止是 MD5：用感知哈希处理「相似但不相同」","path":"2026/09/25/image-dedup-phash/"},{"title":"把 UxPlay 做成便携版：一次完整的依赖闭包打包","path":"2026/09/25/uxplay-portable-package/"},{"title":"麦克风没声音：注册表和音量合成器都查不到的那个静音标志","path":"2026/09/25/windows-mic-muted/"}]`)
+  ipt.addEventListener('keyup', e => {
+    if (e.key === 'Enter') {
+      handleSearch()
+    }
+  })
+  btn.addEventListener('click', () => {
+    handleSearch()
+  })
+
+  document.querySelector('#close-layer-btn').addEventListener('click', () => {
+    layer.classList.toggle('hidden')
+  })
+
+  function handleSearch() {
+    if (ipt.value.trim() === '') {
+      return
+    }
+    let html = ''
+    const targetPosts = posts.filter(post => post.title.includes(ipt.value))
+    targetPosts.forEach(post => {
+      html += `
+        <li>
+          <div>
+            <a href="/${post.path}">${post.title.replace(new RegExp(ipt.value), `<span>${ipt.value}</span>`)}</a>
+          </div>
+          <img src="${post.cover || '/imgs/default-cover.webp' }" />
+        </li>
+      `
+    })
+    if (html.trim () === '') {
+      html += '<p class="empty">没有搜索到内容</p>'
+    }
+    layer.querySelector('ul').innerHTML = html
+    layer.classList.remove('hidden')
+  }
+</script> 
+    <section id="main" class="main">
+      <div class="main-left-wrapper">
+<div class="main-left">
+  <div class="main-left--block">
+    <div class="main-left--info">
+      <img src="/imgs/avatar.jpg"" class="main-left--avatar" />
+      <div class="main-left--intro">
+        <p class="main-left--name">wenjvQAQ</p>
+        <div class="main-left--tags">
+          <span class="main-left--tag">开发</span>
+          <span class="main-left--tag">折腾</span>
+        </div>
+      </div>
+    </div>
+  
+    <div>
+      <div class="main-left--motto">
+        <p>记录踩过的坑</p>
+        <p>和填过的坑</p>
+      </div>
+      <div class="main-left--github">
+        <span class="line"></span>
+        <a target="_blank" rel="noopener" href="https://github.com/wenjvQAQ"><i class="logo iconfont icon-github-fill"></i></a>
+        <span class="line"></span>
+      </div>
+      <div class="main-left--statics">
+        <a href="/categories">
+          <div>
+            <span>1</span>
+            <span>分类</span>
+          </div>
+        </a>
+        <a href="/tags">
+          <div>
+            <span>14</span>
+            <span>标签</span>
+          </div>
+        </a>
+        <a href="/archives">
+          <div>
+            <span>1 </span>
+            <span>归档</span>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-left--block">
+    <ul class="main-left--menu">
+      
+        <li>
+          <a href="/">
+            <span class="header-menu--span">小站首页</span>
+            <i class="header-menu--icon iconfont icon-shouye"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a href="/log">
+            <span class="header-menu--span">个人日志</span>
+            <i class="header-menu--icon iconfont icon-rizhi"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a href="/link">
+            <span class="header-menu--span">友情链接</span>
+            <i class="header-menu--icon iconfont icon-youqinglianjie"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a href="/about">
+            <span class="header-menu--span">关于自己</span>
+            <i class="header-menu--icon iconfont icon-guanyuwomen"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a href="/tools">
+            <span class="header-menu--span">我的工具</span>
+            <i class="header-menu--icon iconfont icon-gongju"></i>
+          </a>
+        </li>
+      
+    </ul>
+  </div>
+
+  <div class="main-left--block">
+    <div class="main-left--site">
+      <h5 class="main-left--title">
+        <span>站点信息</span>
+        <i class="iconfont icon-zhandian"></i>
+      </h5>
+      <p class="main-left--subtitle">
+        <span>文章数目：</span>
+        <span>5 篇</span>
+      </p>
+      <p class="main-left--subtitle">
+        <span>最近动态：</span>
+        <span>今天</span>
+      </p>
+      <p class="main-left--subtitle">
+        <span>上线时间：</span>
+        <span>1天</span>
+      </p>
+      <p class="main-left--subtitle">
+        <span>当前版本：</span>
+        <span>v1.0.2</span>
+      </p>
+    </div>
+  </div>
+</div></div>
+      <div id="main-container" class="main-container">
+
+
+  <link rel="stylesheet" href="/css/partial/article.css" />
+
+<div class="article-container">
+  <div class="article">
+    <h1 class="article-title">AirPlay 投屏「能搜到但连不上」——路由跃点数把广播送到了错误的网卡</h1>
+    <div class="article-info">
+      <div class="article-info--item">
+        <div class="article-info--info">
+          
+          <div class="article-info--categories">
+            <span>分类：</span>
+            <a class="category-link" href="/categories/%E8%B8%A9%E5%9D%91%E8%AE%B0%E5%BD%95/">踩坑记录</a>
+          </div>
+          
+          
+          <div class="article-info--tags">
+            <span>标签：</span>
+            <a class="tag-link" href="/tags/AirPlay/" rel="tag">AirPlay</a><a class="tag-link" href="/tags/Windows/" rel="tag">Windows</a><a class="tag-link" href="/tags/%E7%BD%91%E7%BB%9C/" rel="tag">网络</a>
+          </div>
+          
+          <p class="article-info--date">日期：2026-09-25 14:00:00</p>
+        </div>
+        <img src="/imgs/default-cover.webp" alt="" class="article-cover">
+      </div>
+    </div>
+    <article class="article-content markdown-body">
+      <p>用 UxPlay 给 iPad 投屏到 Windows。iPad 能在「屏幕镜像」里<strong>看到</strong>电脑，点下去却一直转圈，连不上。</p>
+<p>这类「搜索得到但连接失败」的问题，通常指向<strong>设备广播了错误的地址</strong>。查下去果然是——但原因有点反直觉。</p>
+<span id="more"></span>
+
+<h2 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h2><ul>
+<li>Windows 11，WLAN <code>192.168.3.4</code></li>
+<li>装了 <strong>Radmin VPN</strong>（虚拟网卡，<code>26.28.222.208</code>）</li>
+<li>VMware 虚拟网卡两块</li>
+<li>UxPlay 1.74</li>
+</ul>
+<h2 id="排查：先看它到底广播了什么"><a href="#排查：先看它到底广播了什么" class="headerlink" title="排查：先看它到底广播了什么"></a>排查：先看它到底广播了什么</h2><p>AirPlay 靠 <strong>mDNS（Bonjour）</strong> 发现设备。所以第一步是看 UxPlay 实际广播的是哪个地址。</p>
+<p>写个 Python 脚本浏览 <code>_airplay._tcp</code> 服务：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> zeroconf <span class="keyword">import</span> Zeroconf, ServiceBrowser</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">L</span>:</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">add_service</span>(<span class="params">self, zc, type_, name</span>):</span><br><span class="line">        info = zc.get_service_info(type_, name)</span><br><span class="line">        <span class="keyword">if</span> info:</span><br><span class="line">            <span class="built_in">print</span>(name, <span class="string">&quot;-&gt;&quot;</span>, info.parsed_addresses())</span><br><span class="line"></span><br><span class="line">zc = Zeroconf()</span><br><span class="line">ServiceBrowser(zc, <span class="string">&quot;_airplay._tcp.local.&quot;</span>, L())</span><br><span class="line">time.sleep(<span class="number">10</span>)</span><br></pre></td></tr></table></figure>
+
+<p>结果：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">AirPlay._airplay._tcp.local.  -&gt;  [&#x27;26.28.222.208&#x27;]</span><br></pre></td></tr></table></figure>
+
+<p><strong>它广播的是 <code>26.28.222.208</code> —— Radmin VPN 的地址！</strong></p>
+<p>iPad 拿到的就是这个地址。而在 iPad 所在的局域网里，<code>26.28.222.208</code> 是<strong>完全不可达</strong>的，所以连不上。</p>
+<h2 id="为什么-UxPlay-选了那个网卡"><a href="#为什么-UxPlay-选了那个网卡" class="headerlink" title="为什么 UxPlay 选了那个网卡"></a>为什么 UxPlay 选了那个网卡</h2><p>关键问题：UxPlay <strong>没有选择网卡的参数</strong>。</p>
+<p>我一开始以为 <code>-n</code> 是选网卡，其实是设置<strong>服务显示名</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># -n 只是给服务起名字，不是选网卡！</span></span><br><span class="line">uxplay -n <span class="string">&quot;MyAirPlay&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>UxPlay 会<strong>自己按 Windows 的路由跃点数（interface metric）挑一个网卡</strong>。</p>
+<p>查各网卡的 metric：</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">Get-NetIPInterface</span> <span class="literal">-AddressFamily</span> IPv4 |</span><br><span class="line">  <span class="built_in">Sort-Object</span> InterfaceMetric |</span><br><span class="line">  <span class="built_in">Select-Object</span> InterfaceAlias, InterfaceMetric</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">InterfaceAlias                InterfaceMetric</span><br><span class="line">--------------                ---------------</span><br><span class="line">Radmin VPN                                  1     ← 最低，被优先选中</span><br><span class="line">VMware Network Adapter VMnet1              35</span><br><span class="line">VMware Network Adapter VMnet8              35</span><br><span class="line">WLAN                                       50     ← 真正的网卡</span><br></pre></td></tr></table></figure>
+
+<p><strong>Radmin VPN 的 metric 是 1，比 WLAN 的 50 低得多</strong>，所以 Windows 认为它是「最优」路径，UxPlay 就选了它。</p>
+<blockquote>
+<p>跃点数越低优先级越高。VPN 类软件经常把自己设成 1，来确保流量走它。</p>
+</blockquote>
+<h2 id="尝试-1：改-metric（失败）"><a href="#尝试-1：改-metric（失败）" class="headerlink" title="尝试 1：改 metric（失败）"></a>尝试 1：改 metric（失败）</h2><p>最直接的想法是把 Radmin 的 metric 调高：</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 管理员权限</span></span><br><span class="line"><span class="built_in">Set-NetIPInterface</span> <span class="literal">-InterfaceAlias</span> <span class="string">&quot;Radmin VPN&quot;</span> <span class="literal">-AddressFamily</span> IPv4 <span class="literal">-InterfaceMetric</span> <span class="number">5000</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>无效。</strong> 执行后一查还是 1：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">InterfaceAlias   InterfaceMetric</span><br><span class="line">Radmin VPN                   1     ← 被改回去了</span><br><span class="line">WLAN                        50</span><br></pre></td></tr></table></figure>
+
+<p>原因是 <strong>Radmin 的控制服务会把自己的 metric 改回来</strong>。这类 VPN 软件都有类似的自保护机制。</p>
+<h2 id="解决方案：停用网卡"><a href="#解决方案：停用网卡" class="headerlink" title="解决方案：停用网卡"></a>解决方案：停用网卡</h2><p>既然改不了 metric，就<strong>停用整个网卡</strong>：</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 管理员权限</span></span><br><span class="line"><span class="built_in">Disable-NetAdapter</span> <span class="literal">-Name</span> <span class="string">&quot;Radmin VPN&quot;</span> <span class="literal">-Confirm</span>:<span class="variable">$false</span></span><br></pre></td></tr></table></figure>
+
+<p>停用后再看广播：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">AirPlay._airplay._tcp.local.  -&gt;  [&#x27;192.168.3.4&#x27;]      ← 正确了</span><br></pre></td></tr></table></figure>
+
+<p><strong>iPad 立刻就能连上。</strong></p>
+<h2 id="另一个坑：主机名解析"><a href="#另一个坑：主机名解析" class="headerlink" title="另一个坑：主机名解析"></a>另一个坑：主机名解析</h2><p>排查过程中还发现一个隐患。</p>
+<p>UxPlay 广播时会附带 <code>server=&lt;hostname&gt;.local.</code> 的 A 记录。而<strong>这台机器的主机名解析出 4 个地址</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">socket.gethostbyname_ex(socket.gethostname())</span><br><span class="line"><span class="comment"># → (&#x27;cry&#x27;, [], [&#x27;26.28.222.208&#x27;,           ← Radmin 排在最前</span></span><br><span class="line"><span class="comment">#                 &#x27;169.254.4.255&#x27;,           ← link-local</span></span><br><span class="line"><span class="comment">#                &#x27;169.254.194.200&#x27;,</span></span><br><span class="line"><span class="comment">#                &#x27;192.168.3.4&#x27;])            ← 真正的地址</span></span><br></pre></td></tr></table></figure>
+
+<p>也就是说，即使主地址对了，<strong>A 记录里仍然会带上那几个不可达的地址</strong>，客户端可能先试错的那个。</p>
+<p>解决办法是在广播时<strong>用一个专用的 server 名，而不是机器主机名</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">info = ServiceInfo(</span><br><span class="line">    <span class="string">&quot;_airplay._tcp.local.&quot;</span>,</span><br><span class="line">    <span class="string">&quot;AirPlay._airplay._tcp.local.&quot;</span>,</span><br><span class="line">    addresses=[socket.inet_aton(real_ip)],   <span class="comment"># 只给真实地址</span></span><br><span class="line">    server=<span class="string">&quot;airplay-advert.local.&quot;</span>,          <span class="comment"># 不用 hostname</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<h2 id="「能搜到但连不上」的通用排查思路"><a href="#「能搜到但连不上」的通用排查思路" class="headerlink" title="「能搜到但连不上」的通用排查思路"></a>「能搜到但连不上」的通用排查思路</h2><p>这个问题本质上是<strong>「发现成功，但地址错误」</strong>。遇到类似情况可以这样排：</p>
+<table>
+<thead>
+<tr>
+<th>步骤</th>
+<th>方法</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td><strong>看它广播了什么地址</strong>（zeroconf &#x2F; <code>dns-sd -B</code> &#x2F; Wireshark）</td>
+</tr>
+<tr>
+<td>2</td>
+<td>对比这个地址和客户端所在的网段</td>
+</tr>
+<tr>
+<td>3</td>
+<td>列所有网卡和 metric，找「优先级异常高」的虚拟网卡</td>
+</tr>
+<tr>
+<td>4</td>
+<td>VPN &#x2F; VMware &#x2F; 虚拟网卡<strong>先停用再测</strong></td>
+</tr>
+<tr>
+<td>5</td>
+<td>检查主机名是否解析出多个地址</td>
+</tr>
+</tbody></table>
+<p><strong>「能搜到」说明 mDNS 通了，「连不上」说明地址或端口不对。</strong> 这两件事要分开验证。</p>
+<h2 id="顺带：验证-mDNS-是否工作的最小方法"><a href="#顺带：验证-mDNS-是否工作的最小方法" class="headerlink" title="顺带：验证 mDNS 是否工作的最小方法"></a>顺带：验证 mDNS 是否工作的最小方法</h2><p>在动 UxPlay 之前，可以先确认网络层没问题——自己广播一个假的 AirPlay 服务：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">info = ServiceInfo(</span><br><span class="line">    <span class="string">&quot;_airplay._tcp.local.&quot;</span>,</span><br><span class="line">    <span class="string">&quot;TEST._airplay._tcp.local.&quot;</span>,</span><br><span class="line">    addresses=[socket.inet_aton(ip)],</span><br><span class="line">    port=<span class="number">7000</span>,</span><br><span class="line">    properties=&#123;<span class="string">b&quot;model&quot;</span>: <span class="string">b&quot;AppleTV3,2&quot;</span>&#125;,</span><br><span class="line">)</span><br><span class="line">zc.register_service(info)</span><br></pre></td></tr></table></figure>
+
+<p>如果 iPad 能在「屏幕镜像」列表里看到这个假服务，说明<strong>发现链路是通的</strong>，问题只在真正的接收端。</p>
+<p>这个方法在排查时很有用：<strong>把「网络能不能发现」和「服务能不能连接」分开验证。</strong></p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><ol>
+<li><p><strong>UxPlay 不能选网卡</strong>，它按路由跃点数自动挑。<code>-n</code> 只是服务名，别搞混。</p>
+</li>
+<li><p><strong>VPN 类软件通常把 metric 设为 1</strong>，会抢走所有「按最优路径选择」的行为。<code>Get-NetIPInterface</code> 可以查。</p>
+</li>
+<li><p><strong>改 metric 可能被服务改回来</strong>，最可靠的方案是直接停用网卡。</p>
+</li>
+<li><p><strong>主机名可能解析出多个地址</strong>，广播时用专用名称更安全。</p>
+</li>
+<li><p><strong>「能搜到」和「能连上」是两个独立环节</strong>，分开验证能快速定位问题在哪一层。</p>
+</li>
+</ol>
+
+    </article>
+    
+  </div>
+  <div class="article-catelogue">
+    <div class="article-catelogue--wrapper">
+      <div class="catelogue catelogue-1">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%8E%AF%E5%A2%83"><span class="toc-number">1.</span> <span class="toc-text">环境</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8E%92%E6%9F%A5%EF%BC%9A%E5%85%88%E7%9C%8B%E5%AE%83%E5%88%B0%E5%BA%95%E5%B9%BF%E6%92%AD%E4%BA%86%E4%BB%80%E4%B9%88"><span class="toc-number">2.</span> <span class="toc-text">排查：先看它到底广播了什么</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88-UxPlay-%E9%80%89%E4%BA%86%E9%82%A3%E4%B8%AA%E7%BD%91%E5%8D%A1"><span class="toc-number">3.</span> <span class="toc-text">为什么 UxPlay 选了那个网卡</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B0%9D%E8%AF%95-1%EF%BC%9A%E6%94%B9-metric%EF%BC%88%E5%A4%B1%E8%B4%A5%EF%BC%89"><span class="toc-number">4.</span> <span class="toc-text">尝试 1：改 metric（失败）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%EF%BC%9A%E5%81%9C%E7%94%A8%E7%BD%91%E5%8D%A1"><span class="toc-number">5.</span> <span class="toc-text">解决方案：停用网卡</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%A6%E4%B8%80%E4%B8%AA%E5%9D%91%EF%BC%9A%E4%B8%BB%E6%9C%BA%E5%90%8D%E8%A7%A3%E6%9E%90"><span class="toc-number">6.</span> <span class="toc-text">另一个坑：主机名解析</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E3%80%8C%E8%83%BD%E6%90%9C%E5%88%B0%E4%BD%86%E8%BF%9E%E4%B8%8D%E4%B8%8A%E3%80%8D%E7%9A%84%E9%80%9A%E7%94%A8%E6%8E%92%E6%9F%A5%E6%80%9D%E8%B7%AF"><span class="toc-number">7.</span> <span class="toc-text">「能搜到但连不上」的通用排查思路</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%A1%BA%E5%B8%A6%EF%BC%9A%E9%AA%8C%E8%AF%81-mDNS-%E6%98%AF%E5%90%A6%E5%B7%A5%E4%BD%9C%E7%9A%84%E6%9C%80%E5%B0%8F%E6%96%B9%E6%B3%95"><span class="toc-number">8.</span> <span class="toc-text">顺带：验证 mDNS 是否工作的最小方法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B0%8F%E7%BB%93"><span class="toc-number">9.</span> <span class="toc-text">小结</span></a></li></ol>
+      </div>
+      
+        <div class="catelogue catelogue-2">
+           
+          
+            <p>
+              <span>下一篇</span>
+              <a href="/2026/09/25/image-dedup-phash/">图片去重不止是 MD5：用感知哈希处理「相似但不相同」</a>
+            </p>
+          
+        </div>
+      
+    </div>
+  </div>
+</div>
+
+
+
+<script>
+  $(document).on('pjax:complete', function() {
+    const tocs = document.querySelector('.toc')
+    const links = tocs ? tocs.querySelectorAll('a') : []
+    links.forEach(link => {
+      link.addEventListener('click', e => {
+        const href = decodeURIComponent(e.href)
+        href.search(/#(.*)/)
+        const id = RegExp.$1
+        const target = document.querySelector('#' + id)
+        const top = target.offsetTop
+        document.documentElement.scrollTo({
+          top: top - 100,
+          behavior: 'smooth'
+        })
+        e.preventDefault()
+      })
+    })
+  })
+</script> 
+
+</div>
+      <div class="main-right-wrapper"><div class="main-right">
+  <div class="main-right--board">
+    <div class="main-right--title">
+      <h5>公告栏</h5>
+      <i class="iconfont icon-gonggao"></i>
+    </div>
+    <div class="main-right--content">
+      这里记录我在实际开发中真实遇到的问题，以及最后怎么解决的。尽量把排查过程也写出来，包括走过的弯路。 
+    </div>
+  </div>
+
+  
+
+  <div class="operate-items">
+    <div class="operate-item backtop">
+      <i class="iconfont icon-huidaodingbu"></i>
+      <span>回到顶部</span>
+    </div>
+    
+  </div>
+
+  <div class="main-right--site">
+    <div class="main-right--power">
+      <p>Power By <a target="_blank" rel="noopener" href="https://hexo.io/zh-cn/docs/">Hexo</a>.</p>
+      <p>Theme：<a target="_blank" rel="noopener" href="https://github.com/Aizener/hexo-theme-cola">Cola.</a></p>
+    </div>
+    
+  </div>
+</div>
+
+<script>
+  function setOperateItem () {
+    const reg = /\d{4}\/\d{2}\/\d{2}\/.+/
+    const path = location.pathname
+    const operateDom = document.querySelector('.main-right .operate-items')
+    const commentDom = document.querySelector('.turn-comment')
+    const cateloguDom = document.querySelector('.article-catelogue > .article-catelogue--wrapper');
+
+    if (commentDom) {
+      if (reg.test(path) || path.match(/\/log\/.+/)) {
+        commentDom.classList.remove('hidden')
+        const newDom = operateDom.cloneNode(true);
+        const _backtopDom = newDom.querySelector('.backtop');
+        const _commentDom = newDom.querySelector('.turn-comment');
+        _backtopDom.addEventListener('click', () => backTopEvent());
+        _commentDom.addEventListener('click', () => commentDomEvent());
+        cateloguDom.appendChild(newDom);
+      } else {
+        commentDom.classList.add('hidden')
+      }
+    }
+  }
+
+  setOperateItem()
+  
+
+  $(document).on('pjax:complete', function() {
+    setOperateItem()
+  })
+
+  document.querySelector('.backtop').addEventListener('click', () => {
+    backTopEvent();
+  })
+  const dom = document.querySelector('.turn-comment')
+  dom && dom.addEventListener('click', () => {
+    commentDomEvent();
+  })
+
+  function backTopEvent() {
+    document.documentElement.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    })
+  }
+
+  function commentDomEvent() {
+    const commentDom = document.querySelector('.comments-intro')
+    if (!commentDom) return
+    const top = commentDom.offsetTop, height = commentDom.offsetHeight
+    document.documentElement.scrollTo({
+      top: top - 2 * height,
+      behavior: 'smooth'
+    })
+  }
+</script></div>
+    </section>
+  </div>
+  <div id="progress" class="progress"></div>
+  <div id="gray" class="gray"></div>
+
+  <script>
+    function initScroll () {
+      document.addEventListener('scroll', () => {
+        const doc = document.documentElement
+        const scrollTop = doc.scrollTop
+        const pageHeight = doc.offsetHeight
+        const clientHeight = doc.clientHeight
+        const ratio = scrollTop / (pageHeight - clientHeight)
+        const progress = document.querySelector('#progress')
+        const avatarImg = document.querySelector('.main-left--avatar')
+        progress.style.width = (100 * ratio) + '%'
+        avatarImg.style.transform = `rotate(${360 * ratio}deg)`
+      })
+    }
+
+    const rootPath = "/"
+
+    const checkAndSetArticlePageLayout = () => {
+      const path = location.pathname.replace(rootPath, '');
+      if (
+        /^\/?\d{4}\/\d{2}\/\d{2}\/.*/.test(path) ||
+        /^log\/.+/.test(path)
+      ) {
+        $('.main-container, .main-right, .main-right-wrapper').addClass('is-article')
+      } else {
+        $('.main-container, .main-right, .main-right-wrapper').removeClass('is-article')
+      }
+    }
+
+    const gray = "none"
+    const setGrayStyle = () => {
+      if (gray === 'none') {
+        return
+      } else if (gray === 'index') {
+        location.pathname === '/' ? $('#gray').show() : $('#gray').hide()
+      } else if (gray === 'all') {
+        $('#gray').show()
+      }
+    }
+    setGrayStyle()
+
+
+    window.onload = function () {
+      checkAndSetArticlePageLayout()
+      setTimeout(() => {
+        $('#load').slideUp()
+        $('#container').slideToggle()
+        setTimeout(() => {
+          initScroll();
+        }, 500)
+      }, 500)
+    }
+    
+    let status = 0
+    // 对所有链接跳转事件绑定pjax容器container
+    $(document).pjax('a[target!=_blank]', '#main-container', {
+      container: '#main-container',
+      fragment: '#main-container',
+      timeout: 8000
+    })
+
+    $(document).on('pjax:start', function() {
+    })
+    $(document).on('pjax:complete', function() {
+      status = 0
+      $('.main-container').addClass('to-up').on('animationend', function() {
+        $(this).removeClass('to-up')
+      })
+      setGrayStyle()
+      checkAndSetArticlePageLayout()
+    })
+    $(document).on('pjax:popstate', function() {
+      status = -1
+      checkAndSetArticlePageLayout()
+    });
+  </script>
+</body>
+</html>

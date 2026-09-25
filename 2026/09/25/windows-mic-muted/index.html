@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>麦克风没声音：注册表和音量合成器都查不到的那个静音标志 | wenjvQAQ 的技术笔记</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="shortcut icon" href="/imgs/shortcut-icon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="/css/public.css" />
+  <link rel="stylesheet" href="/css/layout.css" />
+  <link rel="stylesheet" href="/css/iconfont.css" />
+  <link rel="stylesheet" href="/css/APlayer.min.css" />
+  <script src="/js/APlayer.min.js"></script>
+  <script src="/js/jquery.min.js"></script>
+  <script src="/js/jquery.pjax.min.js"></script>
+
+  
+  <script>
+    document.title = "麦克风没声音：注册表和音量合成器都查不到的那个静音标志 | wenjvQAQ 的技术笔记"
+  </script>
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<style>
+  .load {
+    width: 100%;
+    height: 100vh;
+    background-color: rgb(37, 35, 40);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    z-index: 9999;
+  }
+  .load-circle {
+    width: 80px;
+    height: 80px;
+    border: 8px solid orange;
+    border-bottom-color: transparent;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: rotate 1s linear infinite;
+    filter: drop-shadow(0 0 3px orange);
+  }
+  .load-circle-inner {
+    width: 40px;
+    height: 40px;
+    border: 8px solid orange;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: rotate-reverse .5s linear infinite;
+  }
+  .load-text {
+    margin-top: 20px;
+    font-size: 24px;
+    color: orange;
+    display: flex;
+  }
+  .load-text span {
+    margin: 0 5px;
+    text-shadow: 5px 5px 5px orange;
+    animation: move 1s linear infinite;
+  }
+  .load-text span:nth-child(1) {
+    animation-delay: -0.6s;
+  }
+  .load-text span:nth-child(2) {
+    animation-delay: -0.5s;
+  }
+  .load-text span:nth-child(3) {
+    animation-delay: -0.4s;
+  }
+  .load-text span:nth-child(4) {
+    animation-delay: -0.3s;
+  }
+  .load-text span:nth-child(5) {
+    animation-delay: -0.2s;
+  }
+  .load-text span:nth-child(6) {
+    animation-delay: -0.1s;
+  }
+  @keyframes rotate {
+    0% { transform: rotate(0); }
+    100% { transform: rotate(360deg); }
+  }
+  @keyframes rotate-reverse {
+    0% { transform: rotate(0); }
+    100% { transform: rotate(-360deg); }
+  }
+  @keyframes move {
+    0% { transform: translateY(0%) rotate(0) scale(1); }
+    20% { transform: translateY(20%) rotate(10deg) scale(1.2); }
+    80% { transform: translateY(-10%) rotate(-20deg) scale(.8);}
+    100% { transform: translateY(0) rotate(0) scale(1); }
+  }
+
+  .progress {
+    position: fixed;
+    left: 0; top: 0;
+    width: 0;
+    height: 3px;
+    background-color: green;
+    transition: all cubic-bezier(0.215, 0.610, 0.355, 1) .1s;
+    z-index: 9999;
+  }
+
+  .to-up {
+    animation: toUp .5s 1;
+  }
+  .gray {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100vh;
+    z-index: 9999;
+    display: none;
+    pointer-events: none;
+    background-color: #000;
+    mix-blend-mode: color;
+  }
+  @keyframes toUp {
+    from { transform: translateY(15px); opacity: 0; }
+    to { transform: translateY(0) ; opacity: 1; }
+  }
+</style>
+<body>
+  <div id="load" class="load">
+    <div class="load-circle">
+      <div class="load-circle-inner"></div>
+    </div>
+    <p class="load-text">
+      <span>L</span>
+      <span>O</span>
+      <span>A</span>
+      <span>D</span>
+      <span>I</span>
+      <span>N</span>
+      <span>G</span>
+    </p>
+  </div>
+  <div id="container" class="container w-100 vh-100" style="display: none;">
+    <header class="header">
+  <div class="header-wrapper">
+    <div class="header-left">
+      <div class="header-search">
+        <input id="search-input" type="text" class="header-search--input" placeholder="请输入要检索的文章标题" />
+        <span id="search-btn" class="header-search--icon"><i class="iconfont icon-sousuo"></i></span>
+      </div>
+      <div id="search-layer" class="header-search--layer hidden">
+        <p class="title">
+          <span>以下是搜索内容：</span>
+          <span id="close-layer-btn">关闭</span>
+        </p>
+        <ul>
+        </ul>
+      </div>
+    </div>
+    <div class="header-right">
+      <ul class="header-menu">
+        <li>
+          <a href="https://wenjvqaq.github.io/">
+            <i class="header-menu--icon iconfont icon-shouye"></i>
+            <span class="header-menu--span">首页</span>
+          </a>
+        </li>
+        <li>
+          <a href="https://wenjvqaq.github.io/log">
+            <i class="header-menu--icon iconfont icon-rizhi"></i>
+            <span class="header-menu--span">日志</span>
+          </a>
+        </li>
+        <li>
+          <a href="https://wenjvqaq.github.io/link">
+            <i class="header-menu--icon iconfont icon-youqinglianjie"></i>
+            <span class="header-menu--span">友情链接</span>
+          </a>
+        </li>
+        <li>
+          <a href="https://wenjvqaq.github.io/about">
+            <i class="header-menu--icon iconfont icon-guanyuwomen"></i>
+            <span class="header-menu--span">关于我</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</header>
+
+<script>
+  const ipt = document.querySelector('#search-input')
+  const btn = document.querySelector('#search-btn')
+  const layer = document.querySelector('#search-layer')
+  const posts = JSON.parse(`[{"title":"AirPlay 投屏「能搜到但连不上」——路由跃点数把广播送到了错误的网卡","path":"2026/09/25/airplay-wrong-interface/"},{"title":"PySide6 最隐蔽的 bug：QObject worker 被垃圾回收，程序「什么都没发生」","path":"2026/09/25/pyside6-qobject-worker-gc/"},{"title":"图片去重不止是 MD5：用感知哈希处理「相似但不相同」","path":"2026/09/25/image-dedup-phash/"},{"title":"把 UxPlay 做成便携版：一次完整的依赖闭包打包","path":"2026/09/25/uxplay-portable-package/"},{"title":"麦克风没声音：注册表和音量合成器都查不到的那个静音标志","path":"2026/09/25/windows-mic-muted/"}]`)
+  ipt.addEventListener('keyup', e => {
+    if (e.key === 'Enter') {
+      handleSearch()
+    }
+  })
+  btn.addEventListener('click', () => {
+    handleSearch()
+  })
+
+  document.querySelector('#close-layer-btn').addEventListener('click', () => {
+    layer.classList.toggle('hidden')
+  })
+
+  function handleSearch() {
+    if (ipt.value.trim() === '') {
+      return
+    }
+    let html = ''
+    const targetPosts = posts.filter(post => post.title.includes(ipt.value))
+    targetPosts.forEach(post => {
+      html += `
+        <li>
+          <div>
+            <a href="/${post.path}">${post.title.replace(new RegExp(ipt.value), `<span>${ipt.value}</span>`)}</a>
+          </div>
+          <img src="${post.cover || '/imgs/default-cover.webp' }" />
+        </li>
+      `
+    })
+    if (html.trim () === '') {
+      html += '<p class="empty">没有搜索到内容</p>'
+    }
+    layer.querySelector('ul').innerHTML = html
+    layer.classList.remove('hidden')
+  }
+</script> 
+    <section id="main" class="main">
+      <div class="main-left-wrapper">
+<div class="main-left">
+  <div class="main-left--block">
+    <div class="main-left--info">
+      <img src="/imgs/avatar.jpg"" class="main-left--avatar" />
+      <div class="main-left--intro">
+        <p class="main-left--name">wenjvQAQ</p>
+        <div class="main-left--tags">
+          <span class="main-left--tag">开发</span>
+          <span class="main-left--tag">折腾</span>
+        </div>
+      </div>
+    </div>
+  
+    <div>
+      <div class="main-left--motto">
+        <p>记录踩过的坑</p>
+        <p>和填过的坑</p>
+      </div>
+      <div class="main-left--github">
+        <span class="line"></span>
+        <a target="_blank" rel="noopener" href="https://github.com/wenjvQAQ"><i class="logo iconfont icon-github-fill"></i></a>
+        <span class="line"></span>
+      </div>
+      <div class="main-left--statics">
+        <a href="/categories">
+          <div>
+            <span>1</span>
+            <span>分类</span>
+          </div>
+        </a>
+        <a href="/tags">
+          <div>
+            <span>14</span>
+            <span>标签</span>
+          </div>
+        </a>
+        <a href="/archives">
+          <div>
+            <span>1 </span>
+            <span>归档</span>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-left--block">
+    <ul class="main-left--menu">
+      
+        <li>
+          <a href="/">
+            <span class="header-menu--span">小站首页</span>
+            <i class="header-menu--icon iconfont icon-shouye"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a href="/log">
+            <span class="header-menu--span">个人日志</span>
+            <i class="header-menu--icon iconfont icon-rizhi"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a href="/link">
+            <span class="header-menu--span">友情链接</span>
+            <i class="header-menu--icon iconfont icon-youqinglianjie"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a href="/about">
+            <span class="header-menu--span">关于自己</span>
+            <i class="header-menu--icon iconfont icon-guanyuwomen"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a href="/tools">
+            <span class="header-menu--span">我的工具</span>
+            <i class="header-menu--icon iconfont icon-gongju"></i>
+          </a>
+        </li>
+      
+    </ul>
+  </div>
+
+  <div class="main-left--block">
+    <div class="main-left--site">
+      <h5 class="main-left--title">
+        <span>站点信息</span>
+        <i class="iconfont icon-zhandian"></i>
+      </h5>
+      <p class="main-left--subtitle">
+        <span>文章数目：</span>
+        <span>5 篇</span>
+      </p>
+      <p class="main-left--subtitle">
+        <span>最近动态：</span>
+        <span>今天</span>
+      </p>
+      <p class="main-left--subtitle">
+        <span>上线时间：</span>
+        <span>1天</span>
+      </p>
+      <p class="main-left--subtitle">
+        <span>当前版本：</span>
+        <span>v1.0.2</span>
+      </p>
+    </div>
+  </div>
+</div></div>
+      <div id="main-container" class="main-container">
+
+
+  <link rel="stylesheet" href="/css/partial/article.css" />
+
+<div class="article-container">
+  <div class="article">
+    <h1 class="article-title">麦克风没声音：注册表和音量合成器都查不到的那个静音标志</h1>
+    <div class="article-info">
+      <div class="article-info--item">
+        <div class="article-info--info">
+          
+          <div class="article-info--categories">
+            <span>分类：</span>
+            <a class="category-link" href="/categories/%E8%B8%A9%E5%9D%91%E8%AE%B0%E5%BD%95/">踩坑记录</a>
+          </div>
+          
+          
+          <div class="article-info--tags">
+            <span>标签：</span>
+            <a class="tag-link" href="/tags/Windows/" rel="tag">Windows</a><a class="tag-link" href="/tags/%E6%8E%92%E6%9F%A5/" rel="tag">排查</a><a class="tag-link" href="/tags/%E9%9F%B3%E9%A2%91/" rel="tag">音频</a>
+          </div>
+          
+          <p class="article-info--date">日期：2026-09-25 10:30:00</p>
+        </div>
+        <img src="/imgs/default-cover.webp" alt="" class="article-cover">
+      </div>
+    </div>
+    <article class="article-content markdown-body">
+      <p>QQ 发语音对方听不到。第一反应是 QQ 的问题，结果查下去发现<strong>整个系统的麦克风都没在采集声音</strong>——所有程序都一样。</p>
+<p>顺便说一句，这个问题藏得比较深：<strong>注册表里查不到，音量合成器里看着也正常</strong>。</p>
+<span id="more"></span>
+
+<h2 id="症状"><a href="#症状" class="headerlink" title="症状"></a>症状</h2><p>QQ 语音没声音。但更关键的是，用任何工具录音都是<strong>数字静音</strong>。</p>
+<h2 id="排查过程"><a href="#排查过程" class="headerlink" title="排查过程"></a>排查过程</h2><h3 id="第一步：确认默认设备对不对"><a href="#第一步：确认默认设备对不对" class="headerlink" title="第一步：确认默认设备对不对"></a>第一步：确认默认设备对不对</h3><p>先看系统默认录音设备。用 GStreamer 枚举：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gst-device-monitor-1.0 Audio/Source</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Default Audio Capture Device</span><br><span class="line">  device.actual-name = 麦克风阵列 (英特尔智音技术)</span><br></pre></td></tr></table></figure>
+
+<p><strong>设备是对的</strong>，不是选错了。</p>
+<h3 id="第二步：实际录一段看看"><a href="#第二步：实际录一段看看" class="headerlink" title="第二步：实际录一段看看"></a>第二步：实际录一段看看</h3><p>设备对不代表有信号。用 Python 录 4 秒，看振幅：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> sounddevice <span class="keyword">as</span> sd</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"></span><br><span class="line">rec = sd.rec(<span class="built_in">int</span>(<span class="number">4</span> * <span class="number">16000</span>), samplerate=<span class="number">16000</span>, channels=<span class="number">1</span>, dtype=<span class="string">&quot;int16&quot;</span>)</span><br><span class="line">sd.wait()</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;peak:&quot;</span>, <span class="built_in">int</span>(np.<span class="built_in">abs</span>(rec).<span class="built_in">max</span>()), <span class="string">&quot;/ 32767&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>结果：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">peak : 1 / 32767</span><br></pre></td></tr></table></figure>
+
+<p><strong>peak &#x3D; 1</strong>，满量程是 32767。这就是数字静音，一点信号都没有。</p>
+<h3 id="第三步：换了所有设备试"><a href="#第三步：换了所有设备试" class="headerlink" title="第三步：换了所有设备试"></a>第三步：换了所有设备试</h3><p>我扫了机器上全部 9 个录音设备：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">SILENT [0]  Microsoft 声音映射器           peak=1</span><br><span class="line">SILENT [1]  麦克风阵列 (英特尔智音技术)      peak=1</span><br><span class="line">SILENT [2]  麦克风阵列 (网易虚拟音频设备)    peak=1</span><br><span class="line">SILENT [7]  麦克风阵列 (英特尔智音技术)      peak=1</span><br><span class="line">SILENT [15] 麦克风阵列 (英特尔智音技术)@48k peak=0</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<p><strong>全部静音</strong>。真实硬件和虚拟设备都一样，说明不是单个设备的问题。</p>
+<h3 id="第四步：查静音状态（关键的坑）"><a href="#第四步：查静音状态（关键的坑）" class="headerlink" title="第四步：查静音状态（关键的坑）"></a>第四步：查静音状态（关键的坑）</h3><p>先查注册表里录音设备的属性：</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$k</span> = <span class="string">&#x27;HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Capture&#x27;</span></span><br><span class="line"><span class="built_in">Get-ChildItem</span> <span class="variable">$k</span> | <span class="built_in">ForEach-Object</span> &#123;</span><br><span class="line">  <span class="variable">$p</span> = <span class="built_in">Get-ItemProperty</span> (<span class="built_in">Join-Path</span> <span class="variable">$_</span>.PSPath <span class="string">&#x27;Properties&#x27;</span>)</span><br><span class="line">  <span class="variable">$p</span>.<span class="string">&#x27;&#123;1da5d803-d492-4edd-8c23-e0c0ffee7f0e&#125;,4&#x27;</span>   <span class="comment"># Mute</span></span><br><span class="line">  <span class="variable">$p</span>.<span class="string">&#x27;&#123;1da5d803-d492-4edd-8c23-e0c0ffee7f0e&#125;,3&#x27;</span>   <span class="comment"># Volume</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>全是空的。</strong></p>
+<p>原因是：<strong>这两个值根本不存在注册表里</strong>。它们只活在音频服务的内存中，必须通过 Core Audio API 才能读写。</p>
+<p>所以「翻注册表」和「看音量合成器」这两条常见思路，<strong>都会漏掉这个静音标志</strong>。</p>
+<h2 id="真正的原因"><a href="#真正的原因" class="headerlink" title="真正的原因"></a>真正的原因</h2><p>用 Core Audio API 读默认录音设备的真实状态：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mute = True      ← 静音标志是开的</span><br><span class="line">volume = 100%    ← 但音量其实是满的</span><br></pre></td></tr></table></figure>
+
+<p><strong>音量 100%，静音却开着。</strong> 这就是所有程序都录不到声音的原因。</p>
+<h2 id="解决办法"><a href="#解决办法" class="headerlink" title="解决办法"></a>解决办法</h2><p>写一个 PowerShell 脚本，用 COM 互操作调用 <code>IAudioEndpointVolume</code>：</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">Add-Type</span> <span class="literal">-Language</span> CSharp <span class="string">@&quot;</span></span><br><span class="line"><span class="string">using System;</span></span><br><span class="line"><span class="string">using System.Runtime.InteropServices;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">[ComImport, Guid(&quot;BCDE0395-E52F-467C-8E3D-C4579291692E&quot;)]</span></span><br><span class="line"><span class="string">public class MMDeviceEnumeratorComObject &#123; &#125;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">[Guid(&quot;A95664D2-9614-4F35-A746-DE8DB63617E6&quot;), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]</span></span><br><span class="line"><span class="string">public interface IMMDeviceEnumerator &#123;</span></span><br><span class="line"><span class="string">    int NotImpl1();</span></span><br><span class="line"><span class="string">    int GetDefaultAudioEndpoint(int dataFlow, int role, out IMMDevice ppDevice);</span></span><br><span class="line"><span class="string">&#125;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">[Guid(&quot;D666063F-1587-4E43-81F1-B948E807363F&quot;), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]</span></span><br><span class="line"><span class="string">public interface IMMDevice &#123;</span></span><br><span class="line"><span class="string">    int Activate(ref Guid iid, int dwClsCtx, IntPtr pActivationParams,</span></span><br><span class="line"><span class="string">                 [MarshalAs(UnmanagedType.IUnknown)] out object ppInterface);</span></span><br><span class="line"><span class="string">&#125;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">[Guid(&quot;5CDF2C82-841E-4546-9722-0CF74078229A&quot;), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]</span></span><br><span class="line"><span class="string">public interface IAudioEndpointVolume &#123;</span></span><br><span class="line"><span class="string">    // ... 省略中间方法，顺序不能错</span></span><br><span class="line"><span class="string">    int SetMute([MarshalAs(UnmanagedType.Bool)] bool bMute, Guid pguidEventContext);</span></span><br><span class="line"><span class="string">    int GetMute(out bool pbMute);</span></span><br><span class="line"><span class="string">&#125;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">public static class Mic &#123;</span></span><br><span class="line"><span class="string">    static IAudioEndpointVolume Get() &#123;</span></span><br><span class="line"><span class="string">        var en = (IMMDeviceEnumerator)(new MMDeviceEnumeratorComObject());</span></span><br><span class="line"><span class="string">        IMMDevice dev;</span></span><br><span class="line"><span class="string">        // dataFlow: 0=播放 1=录音    role: 0=Console</span></span><br><span class="line"><span class="string">        Marshal.ThrowExceptionForHR(en.GetDefaultAudioEndpoint(1, 0, out dev));</span></span><br><span class="line"><span class="string">        Guid iid = typeof(IAudioEndpointVolume).GUID;</span></span><br><span class="line"><span class="string">        object o;</span></span><br><span class="line"><span class="string">        Marshal.ThrowExceptionForHR(dev.Activate(ref iid, 23, IntPtr.Zero, out o));</span></span><br><span class="line"><span class="string">        return (IAudioEndpointVolume)o;</span></span><br><span class="line"><span class="string">    &#125;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    public static string Report() &#123;</span></span><br><span class="line"><span class="string">        var v = Get();</span></span><br><span class="line"><span class="string">        bool mute; v.GetMute(out mute);</span></span><br><span class="line"><span class="string">        float vol; v.GetMasterVolumeLevelScalar(out vol);</span></span><br><span class="line"><span class="string">        return string.Format(&quot;mute=&#123;0&#125; volume=&#123;1:P0&#125;&quot;, mute, vol);</span></span><br><span class="line"><span class="string">    &#125;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    public static string Fix() &#123;</span></span><br><span class="line"><span class="string">        var v = Get();</span></span><br><span class="line"><span class="string">        v.SetMute(false, Guid.Empty);</span></span><br><span class="line"><span class="string">        v.SetMasterVolumeLevelScalar(1.0f, Guid.Empty);</span></span><br><span class="line"><span class="string">        return Report();</span></span><br><span class="line"><span class="string">    &#125;</span></span><br><span class="line"><span class="string">&#125;</span></span><br><span class="line"><span class="string">&quot;@</span></span><br><span class="line"></span><br><span class="line">[<span class="type">Mic</span>]::Report()</span><br><span class="line">[<span class="type">Mic</span>]::Fix()</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>注意 <code>IAudioEndpointVolume</code> 的方法<strong>顺序必须和 vtable 一致</strong>，不能随便省略中间的方法名——把不需要的保留为声明即可，但顺序不能变。</p>
+</blockquote>
+<p>执行后：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">修复前:  mute=True  volume=100%</span><br><span class="line">修复后:  mute=False volume=100%</span><br></pre></td></tr></table></figure>
+
+<p>再录音验证：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">peak : 20176 / 32767      ← 修复前是 1</span><br><span class="line">RMS  : 1693.9</span><br></pre></td></tr></table></figure>
+
+<p><strong>信号强度提升了约 2 万倍</strong>，麦克风恢复正常。</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>几个值得记住的点：</p>
+<ol>
+<li><p><strong>「设备选对了」不等于「有信号」</strong>。要用实际录音的振幅来判断，别只看设备名。</p>
+</li>
+<li><p><strong>静音标志不在注册表里</strong>。<code>MMDevices\Audio\Capture</code> 下的 <code>Mute</code>&#x2F;<code>Volume</code> 属性是空的，值在音频服务内存中。必须用 Core Audio API。</p>
+</li>
+<li><p><strong>音量合成器也可能骗你</strong>。它显示音量正常，但真正的 mute 标志是另一个维度。</p>
+</li>
+<li><p><strong>虚拟设备的静音是正常的</strong>。网易虚拟音频设备这类没有真实输入的设备，静音是预期行为，别去动它。</p>
+</li>
+</ol>
+<p>排查麦克风问题的顺序建议：</p>
+<table>
+<thead>
+<tr>
+<th>顺序</th>
+<th>检查什么</th>
+<th>怎么看</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>默认设备对不对</td>
+<td><code>gst-device-monitor</code> 或声音设置</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>实际能不能录到</strong></td>
+<td>录一段看 peak 值</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>mute 标志</strong></td>
+<td>Core Audio API（本文的方法）</td>
+</tr>
+<tr>
+<td>4</td>
+<td>应用自己的设备选择</td>
+<td>QQ&#x2F;微信等各自的设置</td>
+</tr>
+</tbody></table>
+<p>前两步能排除大部分问题，第三步是最容易被漏掉的。</p>
+
+    </article>
+    
+  </div>
+  <div class="article-catelogue">
+    <div class="article-catelogue--wrapper">
+      <div class="catelogue catelogue-1">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%97%87%E7%8A%B6"><span class="toc-number">1.</span> <span class="toc-text">症状</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8E%92%E6%9F%A5%E8%BF%87%E7%A8%8B"><span class="toc-number">2.</span> <span class="toc-text">排查过程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AC%AC%E4%B8%80%E6%AD%A5%EF%BC%9A%E7%A1%AE%E8%AE%A4%E9%BB%98%E8%AE%A4%E8%AE%BE%E5%A4%87%E5%AF%B9%E4%B8%8D%E5%AF%B9"><span class="toc-number">2.1.</span> <span class="toc-text">第一步：确认默认设备对不对</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AC%AC%E4%BA%8C%E6%AD%A5%EF%BC%9A%E5%AE%9E%E9%99%85%E5%BD%95%E4%B8%80%E6%AE%B5%E7%9C%8B%E7%9C%8B"><span class="toc-number">2.2.</span> <span class="toc-text">第二步：实际录一段看看</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AC%AC%E4%B8%89%E6%AD%A5%EF%BC%9A%E6%8D%A2%E4%BA%86%E6%89%80%E6%9C%89%E8%AE%BE%E5%A4%87%E8%AF%95"><span class="toc-number">2.3.</span> <span class="toc-text">第三步：换了所有设备试</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AC%AC%E5%9B%9B%E6%AD%A5%EF%BC%9A%E6%9F%A5%E9%9D%99%E9%9F%B3%E7%8A%B6%E6%80%81%EF%BC%88%E5%85%B3%E9%94%AE%E7%9A%84%E5%9D%91%EF%BC%89"><span class="toc-number">2.4.</span> <span class="toc-text">第四步：查静音状态（关键的坑）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9C%9F%E6%AD%A3%E7%9A%84%E5%8E%9F%E5%9B%A0"><span class="toc-number">3.</span> <span class="toc-text">真正的原因</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95"><span class="toc-number">4.</span> <span class="toc-text">解决办法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B0%8F%E7%BB%93"><span class="toc-number">5.</span> <span class="toc-text">小结</span></a></li></ol>
+      </div>
+      
+        <div class="catelogue catelogue-2">
+          
+            <p>
+              <span>上一篇：</span>
+              <a href="/2026/09/25/uxplay-portable-package/">把 UxPlay 做成便携版：一次完整的依赖闭包打包</a>
+            </p>
+           
+          
+        </div>
+      
+    </div>
+  </div>
+</div>
+
+
+
+<script>
+  $(document).on('pjax:complete', function() {
+    const tocs = document.querySelector('.toc')
+    const links = tocs ? tocs.querySelectorAll('a') : []
+    links.forEach(link => {
+      link.addEventListener('click', e => {
+        const href = decodeURIComponent(e.href)
+        href.search(/#(.*)/)
+        const id = RegExp.$1
+        const target = document.querySelector('#' + id)
+        const top = target.offsetTop
+        document.documentElement.scrollTo({
+          top: top - 100,
+          behavior: 'smooth'
+        })
+        e.preventDefault()
+      })
+    })
+  })
+</script> 
+
+</div>
+      <div class="main-right-wrapper"><div class="main-right">
+  <div class="main-right--board">
+    <div class="main-right--title">
+      <h5>公告栏</h5>
+      <i class="iconfont icon-gonggao"></i>
+    </div>
+    <div class="main-right--content">
+      这里记录我在实际开发中真实遇到的问题，以及最后怎么解决的。尽量把排查过程也写出来，包括走过的弯路。 
+    </div>
+  </div>
+
+  
+
+  <div class="operate-items">
+    <div class="operate-item backtop">
+      <i class="iconfont icon-huidaodingbu"></i>
+      <span>回到顶部</span>
+    </div>
+    
+  </div>
+
+  <div class="main-right--site">
+    <div class="main-right--power">
+      <p>Power By <a target="_blank" rel="noopener" href="https://hexo.io/zh-cn/docs/">Hexo</a>.</p>
+      <p>Theme：<a target="_blank" rel="noopener" href="https://github.com/Aizener/hexo-theme-cola">Cola.</a></p>
+    </div>
+    
+  </div>
+</div>
+
+<script>
+  function setOperateItem () {
+    const reg = /\d{4}\/\d{2}\/\d{2}\/.+/
+    const path = location.pathname
+    const operateDom = document.querySelector('.main-right .operate-items')
+    const commentDom = document.querySelector('.turn-comment')
+    const cateloguDom = document.querySelector('.article-catelogue > .article-catelogue--wrapper');
+
+    if (commentDom) {
+      if (reg.test(path) || path.match(/\/log\/.+/)) {
+        commentDom.classList.remove('hidden')
+        const newDom = operateDom.cloneNode(true);
+        const _backtopDom = newDom.querySelector('.backtop');
+        const _commentDom = newDom.querySelector('.turn-comment');
+        _backtopDom.addEventListener('click', () => backTopEvent());
+        _commentDom.addEventListener('click', () => commentDomEvent());
+        cateloguDom.appendChild(newDom);
+      } else {
+        commentDom.classList.add('hidden')
+      }
+    }
+  }
+
+  setOperateItem()
+  
+
+  $(document).on('pjax:complete', function() {
+    setOperateItem()
+  })
+
+  document.querySelector('.backtop').addEventListener('click', () => {
+    backTopEvent();
+  })
+  const dom = document.querySelector('.turn-comment')
+  dom && dom.addEventListener('click', () => {
+    commentDomEvent();
+  })
+
+  function backTopEvent() {
+    document.documentElement.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    })
+  }
+
+  function commentDomEvent() {
+    const commentDom = document.querySelector('.comments-intro')
+    if (!commentDom) return
+    const top = commentDom.offsetTop, height = commentDom.offsetHeight
+    document.documentElement.scrollTo({
+      top: top - 2 * height,
+      behavior: 'smooth'
+    })
+  }
+</script></div>
+    </section>
+  </div>
+  <div id="progress" class="progress"></div>
+  <div id="gray" class="gray"></div>
+
+  <script>
+    function initScroll () {
+      document.addEventListener('scroll', () => {
+        const doc = document.documentElement
+        const scrollTop = doc.scrollTop
+        const pageHeight = doc.offsetHeight
+        const clientHeight = doc.clientHeight
+        const ratio = scrollTop / (pageHeight - clientHeight)
+        const progress = document.querySelector('#progress')
+        const avatarImg = document.querySelector('.main-left--avatar')
+        progress.style.width = (100 * ratio) + '%'
+        avatarImg.style.transform = `rotate(${360 * ratio}deg)`
+      })
+    }
+
+    const rootPath = "/"
+
+    const checkAndSetArticlePageLayout = () => {
+      const path = location.pathname.replace(rootPath, '');
+      if (
+        /^\/?\d{4}\/\d{2}\/\d{2}\/.*/.test(path) ||
+        /^log\/.+/.test(path)
+      ) {
+        $('.main-container, .main-right, .main-right-wrapper').addClass('is-article')
+      } else {
+        $('.main-container, .main-right, .main-right-wrapper').removeClass('is-article')
+      }
+    }
+
+    const gray = "none"
+    const setGrayStyle = () => {
+      if (gray === 'none') {
+        return
+      } else if (gray === 'index') {
+        location.pathname === '/' ? $('#gray').show() : $('#gray').hide()
+      } else if (gray === 'all') {
+        $('#gray').show()
+      }
+    }
+    setGrayStyle()
+
+
+    window.onload = function () {
+      checkAndSetArticlePageLayout()
+      setTimeout(() => {
+        $('#load').slideUp()
+        $('#container').slideToggle()
+        setTimeout(() => {
+          initScroll();
+        }, 500)
+      }, 500)
+    }
+    
+    let status = 0
+    // 对所有链接跳转事件绑定pjax容器container
+    $(document).pjax('a[target!=_blank]', '#main-container', {
+      container: '#main-container',
+      fragment: '#main-container',
+      timeout: 8000
+    })
+
+    $(document).on('pjax:start', function() {
+    })
+    $(document).on('pjax:complete', function() {
+      status = 0
+      $('.main-container').addClass('to-up').on('animationend', function() {
+        $(this).removeClass('to-up')
+      })
+      setGrayStyle()
+      checkAndSetArticlePageLayout()
+    })
+    $(document).on('pjax:popstate', function() {
+      status = -1
+      checkAndSetArticlePageLayout()
+    });
+  </script>
+</body>
+</html>

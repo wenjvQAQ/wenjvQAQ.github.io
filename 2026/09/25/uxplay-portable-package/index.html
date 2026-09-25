@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>把 UxPlay 做成便携版：一次完整的依赖闭包打包 | wenjvQAQ 的技术笔记</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="shortcut icon" href="/imgs/shortcut-icon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="/css/public.css" />
+  <link rel="stylesheet" href="/css/layout.css" />
+  <link rel="stylesheet" href="/css/iconfont.css" />
+  <link rel="stylesheet" href="/css/APlayer.min.css" />
+  <script src="/js/APlayer.min.js"></script>
+  <script src="/js/jquery.min.js"></script>
+  <script src="/js/jquery.pjax.min.js"></script>
+
+  
+  <script>
+    document.title = "把 UxPlay 做成便携版：一次完整的依赖闭包打包 | wenjvQAQ 的技术笔记"
+  </script>
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<style>
+  .load {
+    width: 100%;
+    height: 100vh;
+    background-color: rgb(37, 35, 40);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    z-index: 9999;
+  }
+  .load-circle {
+    width: 80px;
+    height: 80px;
+    border: 8px solid orange;
+    border-bottom-color: transparent;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: rotate 1s linear infinite;
+    filter: drop-shadow(0 0 3px orange);
+  }
+  .load-circle-inner {
+    width: 40px;
+    height: 40px;
+    border: 8px solid orange;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: rotate-reverse .5s linear infinite;
+  }
+  .load-text {
+    margin-top: 20px;
+    font-size: 24px;
+    color: orange;
+    display: flex;
+  }
+  .load-text span {
+    margin: 0 5px;
+    text-shadow: 5px 5px 5px orange;
+    animation: move 1s linear infinite;
+  }
+  .load-text span:nth-child(1) {
+    animation-delay: -0.6s;
+  }
+  .load-text span:nth-child(2) {
+    animation-delay: -0.5s;
+  }
+  .load-text span:nth-child(3) {
+    animation-delay: -0.4s;
+  }
+  .load-text span:nth-child(4) {
+    animation-delay: -0.3s;
+  }
+  .load-text span:nth-child(5) {
+    animation-delay: -0.2s;
+  }
+  .load-text span:nth-child(6) {
+    animation-delay: -0.1s;
+  }
+  @keyframes rotate {
+    0% { transform: rotate(0); }
+    100% { transform: rotate(360deg); }
+  }
+  @keyframes rotate-reverse {
+    0% { transform: rotate(0); }
+    100% { transform: rotate(-360deg); }
+  }
+  @keyframes move {
+    0% { transform: translateY(0%) rotate(0) scale(1); }
+    20% { transform: translateY(20%) rotate(10deg) scale(1.2); }
+    80% { transform: translateY(-10%) rotate(-20deg) scale(.8);}
+    100% { transform: translateY(0) rotate(0) scale(1); }
+  }
+
+  .progress {
+    position: fixed;
+    left: 0; top: 0;
+    width: 0;
+    height: 3px;
+    background-color: green;
+    transition: all cubic-bezier(0.215, 0.610, 0.355, 1) .1s;
+    z-index: 9999;
+  }
+
+  .to-up {
+    animation: toUp .5s 1;
+  }
+  .gray {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100vh;
+    z-index: 9999;
+    display: none;
+    pointer-events: none;
+    background-color: #000;
+    mix-blend-mode: color;
+  }
+  @keyframes toUp {
+    from { transform: translateY(15px); opacity: 0; }
+    to { transform: translateY(0) ; opacity: 1; }
+  }
+</style>
+<body>
+  <div id="load" class="load">
+    <div class="load-circle">
+      <div class="load-circle-inner"></div>
+    </div>
+    <p class="load-text">
+      <span>L</span>
+      <span>O</span>
+      <span>A</span>
+      <span>D</span>
+      <span>I</span>
+      <span>N</span>
+      <span>G</span>
+    </p>
+  </div>
+  <div id="container" class="container w-100 vh-100" style="display: none;">
+    <header class="header">
+  <div class="header-wrapper">
+    <div class="header-left">
+      <div class="header-search">
+        <input id="search-input" type="text" class="header-search--input" placeholder="请输入要检索的文章标题" />
+        <span id="search-btn" class="header-search--icon"><i class="iconfont icon-sousuo"></i></span>
+      </div>
+      <div id="search-layer" class="header-search--layer hidden">
+        <p class="title">
+          <span>以下是搜索内容：</span>
+          <span id="close-layer-btn">关闭</span>
+        </p>
+        <ul>
+        </ul>
+      </div>
+    </div>
+    <div class="header-right">
+      <ul class="header-menu">
+        <li>
+          <a href="https://wenjvqaq.github.io/">
+            <i class="header-menu--icon iconfont icon-shouye"></i>
+            <span class="header-menu--span">首页</span>
+          </a>
+        </li>
+        <li>
+          <a href="https://wenjvqaq.github.io/log">
+            <i class="header-menu--icon iconfont icon-rizhi"></i>
+            <span class="header-menu--span">日志</span>
+          </a>
+        </li>
+        <li>
+          <a href="https://wenjvqaq.github.io/link">
+            <i class="header-menu--icon iconfont icon-youqinglianjie"></i>
+            <span class="header-menu--span">友情链接</span>
+          </a>
+        </li>
+        <li>
+          <a href="https://wenjvqaq.github.io/about">
+            <i class="header-menu--icon iconfont icon-guanyuwomen"></i>
+            <span class="header-menu--span">关于我</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</header>
+
+<script>
+  const ipt = document.querySelector('#search-input')
+  const btn = document.querySelector('#search-btn')
+  const layer = document.querySelector('#search-layer')
+  const posts = JSON.parse(`[{"title":"AirPlay 投屏「能搜到但连不上」——路由跃点数把广播送到了错误的网卡","path":"2026/09/25/airplay-wrong-interface/"},{"title":"PySide6 最隐蔽的 bug：QObject worker 被垃圾回收，程序「什么都没发生」","path":"2026/09/25/pyside6-qobject-worker-gc/"},{"title":"图片去重不止是 MD5：用感知哈希处理「相似但不相同」","path":"2026/09/25/image-dedup-phash/"},{"title":"把 UxPlay 做成便携版：一次完整的依赖闭包打包","path":"2026/09/25/uxplay-portable-package/"},{"title":"麦克风没声音：注册表和音量合成器都查不到的那个静音标志","path":"2026/09/25/windows-mic-muted/"}]`)
+  ipt.addEventListener('keyup', e => {
+    if (e.key === 'Enter') {
+      handleSearch()
+    }
+  })
+  btn.addEventListener('click', () => {
+    handleSearch()
+  })
+
+  document.querySelector('#close-layer-btn').addEventListener('click', () => {
+    layer.classList.toggle('hidden')
+  })
+
+  function handleSearch() {
+    if (ipt.value.trim() === '') {
+      return
+    }
+    let html = ''
+    const targetPosts = posts.filter(post => post.title.includes(ipt.value))
+    targetPosts.forEach(post => {
+      html += `
+        <li>
+          <div>
+            <a href="/${post.path}">${post.title.replace(new RegExp(ipt.value), `<span>${ipt.value}</span>`)}</a>
+          </div>
+          <img src="${post.cover || '/imgs/default-cover.webp' }" />
+        </li>
+      `
+    })
+    if (html.trim () === '') {
+      html += '<p class="empty">没有搜索到内容</p>'
+    }
+    layer.querySelector('ul').innerHTML = html
+    layer.classList.remove('hidden')
+  }
+</script> 
+    <section id="main" class="main">
+      <div class="main-left-wrapper">
+<div class="main-left">
+  <div class="main-left--block">
+    <div class="main-left--info">
+      <img src="/imgs/avatar.jpg"" class="main-left--avatar" />
+      <div class="main-left--intro">
+        <p class="main-left--name">wenjvQAQ</p>
+        <div class="main-left--tags">
+          <span class="main-left--tag">开发</span>
+          <span class="main-left--tag">折腾</span>
+        </div>
+      </div>
+    </div>
+  
+    <div>
+      <div class="main-left--motto">
+        <p>记录踩过的坑</p>
+        <p>和填过的坑</p>
+      </div>
+      <div class="main-left--github">
+        <span class="line"></span>
+        <a target="_blank" rel="noopener" href="https://github.com/wenjvQAQ"><i class="logo iconfont icon-github-fill"></i></a>
+        <span class="line"></span>
+      </div>
+      <div class="main-left--statics">
+        <a href="/categories">
+          <div>
+            <span>1</span>
+            <span>分类</span>
+          </div>
+        </a>
+        <a href="/tags">
+          <div>
+            <span>14</span>
+            <span>标签</span>
+          </div>
+        </a>
+        <a href="/archives">
+          <div>
+            <span>1 </span>
+            <span>归档</span>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-left--block">
+    <ul class="main-left--menu">
+      
+        <li>
+          <a href="/">
+            <span class="header-menu--span">小站首页</span>
+            <i class="header-menu--icon iconfont icon-shouye"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a href="/log">
+            <span class="header-menu--span">个人日志</span>
+            <i class="header-menu--icon iconfont icon-rizhi"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a href="/link">
+            <span class="header-menu--span">友情链接</span>
+            <i class="header-menu--icon iconfont icon-youqinglianjie"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a href="/about">
+            <span class="header-menu--span">关于自己</span>
+            <i class="header-menu--icon iconfont icon-guanyuwomen"></i>
+          </a>
+        </li>
+      
+        <li>
+          <a href="/tools">
+            <span class="header-menu--span">我的工具</span>
+            <i class="header-menu--icon iconfont icon-gongju"></i>
+          </a>
+        </li>
+      
+    </ul>
+  </div>
+
+  <div class="main-left--block">
+    <div class="main-left--site">
+      <h5 class="main-left--title">
+        <span>站点信息</span>
+        <i class="iconfont icon-zhandian"></i>
+      </h5>
+      <p class="main-left--subtitle">
+        <span>文章数目：</span>
+        <span>5 篇</span>
+      </p>
+      <p class="main-left--subtitle">
+        <span>最近动态：</span>
+        <span>今天</span>
+      </p>
+      <p class="main-left--subtitle">
+        <span>上线时间：</span>
+        <span>1天</span>
+      </p>
+      <p class="main-left--subtitle">
+        <span>当前版本：</span>
+        <span>v1.0.2</span>
+      </p>
+    </div>
+  </div>
+</div></div>
+      <div id="main-container" class="main-container">
+
+
+  <link rel="stylesheet" href="/css/partial/article.css" />
+
+<div class="article-container">
+  <div class="article">
+    <h1 class="article-title">把 UxPlay 做成便携版：一次完整的依赖闭包打包</h1>
+    <div class="article-info">
+      <div class="article-info--item">
+        <div class="article-info--info">
+          
+          <div class="article-info--categories">
+            <span>分类：</span>
+            <a class="category-link" href="/categories/%E8%B8%A9%E5%9D%91%E8%AE%B0%E5%BD%95/">踩坑记录</a>
+          </div>
+          
+          
+          <div class="article-info--tags">
+            <span>标签：</span>
+            <a class="tag-link" href="/tags/GStreamer/" rel="tag">GStreamer</a><a class="tag-link" href="/tags/Windows/" rel="tag">Windows</a><a class="tag-link" href="/tags/%E4%BE%9D%E8%B5%96%E5%88%86%E6%9E%90/" rel="tag">依赖分析</a><a class="tag-link" href="/tags/%E6%89%93%E5%8C%85/" rel="tag">打包</a>
+          </div>
+          
+          <p class="article-info--date">日期：2026-09-25 11:40:00</p>
+        </div>
+        <img src="/imgs/default-cover.webp" alt="" class="article-cover">
+      </div>
+    </div>
+    <article class="article-content markdown-body">
+      <p>想把自己编译的 <code>uxplay.exe</code> 拷到 U 盘，这样换台电脑也能用。</p>
+<p>直接拷过去的结果是<strong>一堆「找不到 xxx.dll」</strong>。这篇文章记录了怎么把依赖一条条找全，最后做成真正能跑的便携版。</p>
+<span id="more"></span>
+
+<h2 id="问题：一个-693-KB-的-exe，拷过去不能用"><a href="#问题：一个-693-KB-的-exe，拷过去不能用" class="headerlink" title="问题：一个 693 KB 的 exe，拷过去不能用"></a>问题：一个 693 KB 的 exe，拷过去不能用</h2><p><code>uxplay.exe</code> 本身只有 693 KB。听起来很轻量，但它是用 MSYS2&#x2F;MinGW 编译的，依赖全部在 <code>C:\msys64\ucrt64\bin</code> 里。</p>
+<p>先看它直接依赖什么：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">objdump -p uxplay.exe | grep <span class="string">&quot;DLL Name:&quot;</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">ADVAPI32.dll          ← 系统</span><br><span class="line">KERNEL32.dll          ← 系统</span><br><span class="line">libgcc_s_seh-1.dll    ← MinGW 运行库</span><br><span class="line">libwinpthread-1.dll   ← MinGW 线程库</span><br><span class="line">libstdc++-6.dll       ← C++ 标准库</span><br><span class="line">libcrypto-3-x64.dll   ← OpenSSL</span><br><span class="line">libglib-2.0-0.dll     ← GLib</span><br><span class="line">libgobject-2.0-0.dll</span><br><span class="line">libgstreamer-1.0-0.dll  ← GStreamer 核心</span><br><span class="line">libgstapp-1.0-0.dll</span><br><span class="line">libgstvideo-1.0-0.dll</span><br><span class="line">libplist-2.0.dll      ← Apple plist 解析</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<p><strong>27 个直接依赖</strong>，而且它们还会继续拉依赖。</p>
+<h2 id="第一层：递归解析依赖闭包"><a href="#第一层：递归解析依赖闭包" class="headerlink" title="第一层：递归解析依赖闭包"></a>第一层：递归解析依赖闭包</h2><p>思路很简单：把 exe 放进去，然后对每个新加进来的 DLL 再跑一遍 <code>objdump</code>，直到没有新的为止。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">resolve_closure</span>(<span class="params">roots, bin_dir</span>):</span><br><span class="line">    found = &#123;&#125;</span><br><span class="line">    queue = <span class="built_in">list</span>(roots)</span><br><span class="line">    seen = <span class="built_in">set</span>()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> queue:</span><br><span class="line">        cur = queue.pop()</span><br><span class="line">        <span class="keyword">if</span> cur <span class="keyword">in</span> seen <span class="keyword">or</span> <span class="keyword">not</span> cur.is_file():</span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line">        seen.add(cur)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> name <span class="keyword">in</span> deps_of(cur):          <span class="comment"># objdump -p</span></span><br><span class="line">            key = name.lower()</span><br><span class="line">            <span class="keyword">if</span> is_system_dll(name) <span class="keyword">or</span> key <span class="keyword">in</span> found:</span><br><span class="line">                <span class="keyword">continue</span>                    <span class="comment"># 系统 DLL 不拷</span></span><br><span class="line">            candidate = bin_dir / name</span><br><span class="line">            <span class="keyword">if</span> candidate.is_file():</span><br><span class="line">                found[key] = candidate</span><br><span class="line">                queue.append(candidate)     <span class="comment"># 新 DLL 继续解析</span></span><br><span class="line">    <span class="keyword">return</span> found</span><br></pre></td></tr></table></figure>
+
+<p>关键是<strong>要区分系统 DLL 和自己带的 DLL</strong>。系统 DLL 绝对不能拷——必须用目标机器自己的，否则会出各种诡异问题。</p>
+<p>我用前缀白名单来排除：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">SYS_RE = re.<span class="built_in">compile</span>(</span><br><span class="line">    <span class="string">r&quot;^(api-ms-win-|ext-ms-|kernel32|user32|advapi32|ws2_32|&quot;</span></span><br><span class="line">    <span class="string">r&quot;ntdll|gdi32|shell32|ole32|crypt32|...|d3d12|dxgi)\.dll$&quot;</span>,</span><br><span class="line">    re.IGNORECASE)</span><br></pre></td></tr></table></figure>
+
+<p><code>api-ms-win-*</code> 这些是 <strong>Windows 的 API Set</strong>，它们<strong>并不真实存在于 System32</strong>，由加载器虚拟解析。所以不用管它们，任何 Win10+ 都有。</p>
+<p>这一步跑完：<strong>17 个 DLL</strong>。</p>
+<h2 id="第二层：插件是运行时加载的，objdump-根本看不到"><a href="#第二层：插件是运行时加载的，objdump-根本看不到" class="headerlink" title="第二层：插件是运行时加载的，objdump 根本看不到"></a>第二层：插件是运行时加载的，objdump 根本看不到</h2><p>这是最容易漏的地方。</p>
+<p>GStreamer 的架构是<strong>插件式</strong>的：核心库在运行时扫描插件目录，动态 <code>LoadLibrary</code>。</p>
+<p><strong>这意味着 <code>objdump</code> 分析 uxplay.exe 时，一个插件都看不到。</strong> 但缺了插件，程序能启动、能连上，就是<strong>出不了画面</strong>。</p>
+<p>所以插件目录必须整体拷贝：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">C:\msys64\ucrt64\lib\gstreamer-1.0\   →   240 个插件 DLL</span><br></pre></td></tr></table></figure>
+
+<p>而且插件<strong>自己也有依赖</strong>。把插件也纳入依赖分析后，又补了一大堆：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">round 1: added 117</span><br><span class="line">round 2: added 52</span><br><span class="line">round 3: added 20</span><br><span class="line">round 4: added 0        ← 收敛</span><br></pre></td></tr></table></figure>
+
+<p><strong>一共补了 189 个 DLL。</strong></p>
+<blockquote>
+<p>迭代到「没有新增」为止很重要。因为新拷进来的 DLL 可能又依赖别的 DLL，一轮是不行的。</p>
+</blockquote>
+<h2 id="最终结构"><a href="#最终结构" class="headerlink" title="最终结构"></a>最终结构</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">uxplay-portable/</span><br><span class="line">├── start_uxplay.bat      启动脚本</span><br><span class="line">├── uxplay.exe            693 KB</span><br><span class="line">├── bin/                  依赖 DLL       ≈203 MB</span><br><span class="line">├── lib/gstreamer-1.0/    240 个插件      ≈25 MB</span><br><span class="line">├── share/                GLib schema</span><br><span class="line">└── gst-registry.bin      插件缓存（首次运行自动重建）</span><br></pre></td></tr></table></figure>
+
+<p>总计 <strong>230 MB &#x2F; 490 个文件</strong>。</p>
+<h2 id="启动脚本：不能依赖盘符"><a href="#启动脚本：不能依赖盘符" class="headerlink" title="启动脚本：不能依赖盘符"></a>启动脚本：不能依赖盘符</h2><p>U 盘在不同电脑上可能是 E:，也可能是 F:、G:。所以脚本必须用 <code>%~dp0</code> 自定位：</p>
+<figure class="highlight bat"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">set</span> &quot;ROOT=%~dp0&quot;</span><br><span class="line"><span class="built_in">set</span> &quot;<span class="built_in">PATH</span>=<span class="variable">%ROOT%</span>bin;<span class="variable">%PATH%</span>&quot;</span><br><span class="line"><span class="built_in">set</span> &quot;GST_PLUGIN_PATH=<span class="variable">%ROOT%</span>lib\gstreamer-<span class="number">1</span>.<span class="number">0</span>&quot;</span><br><span class="line"><span class="built_in">set</span> &quot;GST_PLUGIN_SYSTEM_PATH=&quot;</span><br><span class="line"><span class="built_in">set</span> &quot;GST_REGISTRY=<span class="variable">%ROOT%</span>gst-registry.bin&quot;</span><br><span class="line"></span><br><span class="line">&quot;<span class="variable">%ROOT%</span>uxplay.exe&quot; -n &quot;AirPlay&quot; -nh -vs d3d12videosink -as wasapi2sink</span><br></pre></td></tr></table></figure>
+
+<p>几个要点：</p>
+<ul>
+<li><strong><code>GST_PLUGIN_PATH</code></strong> 指向自带插件目录</li>
+<li><strong><code>GST_PLUGIN_SYSTEM_PATH</code> 要清空</strong>，否则会去扫目标机器上的 GStreamer，可能版本冲突</li>
+<li><strong><code>GST_REGISTRY</code></strong> 放在 U 盘上，否则每次换机器都要重建缓存</li>
+</ul>
+<h2 id="验证：模拟一台干净电脑"><a href="#验证：模拟一台干净电脑" class="headerlink" title="验证：模拟一台干净电脑"></a>验证：模拟一台干净电脑</h2><p>光在本机测试没意义——本机的 MSYS2 在 PATH 里，DLL 怎么都能找到。</p>
+<p>所以测试时<strong>把 MSYS2 完全从 PATH 里移除</strong>，只保留 U 盘目录和系统目录：</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$psi</span>.EnvironmentVariables[<span class="string">&quot;PATH&quot;</span>] = <span class="string">&quot;<span class="variable">$root</span>\bin;C:\Windows\System32;C:\Windows&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>结果：</p>
+<table>
+<thead>
+<tr>
+<th>检查</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>UxPlay 启动</td>
+<td>✅ 无报错</td>
+</tr>
+<tr>
+<td>GStreamer 插件</td>
+<td>✅ 注册 <strong>1270 个元素</strong></td>
+</tr>
+<tr>
+<td>关键组件</td>
+<td>✅ <code>d3d12videosink</code>、<code>wasapi2sink</code>、<code>avdec_h264</code> 都在</td>
+</tr>
+<tr>
+<td>实际播放音频</td>
+<td>✅ exit code 0</td>
+</tr>
+</tbody></table>
+<h2 id="附带发现：exFAT-不支持硬链接"><a href="#附带发现：exFAT-不支持硬链接" class="headerlink" title="附带发现：exFAT 不支持硬链接"></a>附带发现：exFAT 不支持硬链接</h2><p>写文档到 U 盘时报了个奇怪的错：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">EISDIR: illegal operation on a directory, link &#x27;...tmpdir\file.tmp&#x27; -&gt; &#x27;file&#x27;</span><br></pre></td></tr></table></figure>
+
+<p>原因是<strong>现代编辑器保存文件用的是「原子保存」</strong>：先写临时文件，再 <code>rename</code> 覆盖。</p>
+<p>而 <strong>exFAT 文件系统不支持硬链接</strong>，<code>rename</code> 在目标已存在时会失败。</p>
+<p><strong>不影响程序运行</strong>，只是往 U 盘写文本文件时要注意——先写到本地硬盘再拷过去就行。</p>
+<h2 id="用到的两个脚本"><a href="#用到的两个脚本" class="headerlink" title="用到的两个脚本"></a>用到的两个脚本</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 1. 解析直接依赖 + 拷贝 exe 和插件</span></span><br><span class="line">python build_portable_uxplay.py E:\uxplay-portable</span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. 补齐插件的传递依赖（迭代到收敛）</span></span><br><span class="line">python complete_deps.py E:\uxplay-portable</span><br></pre></td></tr></table></figure>
+
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>打包一个「看似只有一个 exe」的程序，要注意：</p>
+<ol>
+<li><strong>用 <code>objdump</code> 递归解析闭包</strong>，别只看第一层</li>
+<li><strong>插件是运行时加载的</strong>，静态分析看不到——必须整体拷贝并单独解析它们的依赖</li>
+<li><strong>迭代到收敛</strong>，新加的 DLL 会带来新依赖</li>
+<li><strong>验证时要模拟干净环境</strong>，把开发环境的 PATH 去掉，否则测了个寂寞</li>
+<li>系统 DLL 绝不能拷，<code>api-ms-win-*</code> 是虚拟的，不用管</li>
+</ol>
+<p>这套方法对所有 MinGW 编译的程序都通用——GIMP、Inkscape 之类的便携版也是这个思路。</p>
+
+    </article>
+    
+  </div>
+  <div class="article-catelogue">
+    <div class="article-catelogue--wrapper">
+      <div class="catelogue catelogue-1">
+        <h3>目录</h3>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%97%AE%E9%A2%98%EF%BC%9A%E4%B8%80%E4%B8%AA-693-KB-%E7%9A%84-exe%EF%BC%8C%E6%8B%B7%E8%BF%87%E5%8E%BB%E4%B8%8D%E8%83%BD%E7%94%A8"><span class="toc-number">1.</span> <span class="toc-text">问题：一个 693 KB 的 exe，拷过去不能用</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AC%AC%E4%B8%80%E5%B1%82%EF%BC%9A%E9%80%92%E5%BD%92%E8%A7%A3%E6%9E%90%E4%BE%9D%E8%B5%96%E9%97%AD%E5%8C%85"><span class="toc-number">2.</span> <span class="toc-text">第一层：递归解析依赖闭包</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AC%AC%E4%BA%8C%E5%B1%82%EF%BC%9A%E6%8F%92%E4%BB%B6%E6%98%AF%E8%BF%90%E8%A1%8C%E6%97%B6%E5%8A%A0%E8%BD%BD%E7%9A%84%EF%BC%8Cobjdump-%E6%A0%B9%E6%9C%AC%E7%9C%8B%E4%B8%8D%E5%88%B0"><span class="toc-number">3.</span> <span class="toc-text">第二层：插件是运行时加载的，objdump 根本看不到</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9C%80%E7%BB%88%E7%BB%93%E6%9E%84"><span class="toc-number">4.</span> <span class="toc-text">最终结构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%90%AF%E5%8A%A8%E8%84%9A%E6%9C%AC%EF%BC%9A%E4%B8%8D%E8%83%BD%E4%BE%9D%E8%B5%96%E7%9B%98%E7%AC%A6"><span class="toc-number">5.</span> <span class="toc-text">启动脚本：不能依赖盘符</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%AA%8C%E8%AF%81%EF%BC%9A%E6%A8%A1%E6%8B%9F%E4%B8%80%E5%8F%B0%E5%B9%B2%E5%87%80%E7%94%B5%E8%84%91"><span class="toc-number">6.</span> <span class="toc-text">验证：模拟一台干净电脑</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%99%84%E5%B8%A6%E5%8F%91%E7%8E%B0%EF%BC%9AexFAT-%E4%B8%8D%E6%94%AF%E6%8C%81%E7%A1%AC%E9%93%BE%E6%8E%A5"><span class="toc-number">7.</span> <span class="toc-text">附带发现：exFAT 不支持硬链接</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%94%A8%E5%88%B0%E7%9A%84%E4%B8%A4%E4%B8%AA%E8%84%9A%E6%9C%AC"><span class="toc-number">8.</span> <span class="toc-text">用到的两个脚本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B0%8F%E7%BB%93"><span class="toc-number">9.</span> <span class="toc-text">小结</span></a></li></ol>
+      </div>
+      
+        <div class="catelogue catelogue-2">
+          
+            <p>
+              <span>上一篇：</span>
+              <a href="/2026/09/25/pyside6-qobject-worker-gc/">PySide6 最隐蔽的 bug：QObject worker 被垃圾回收，程序「什么都没发生」</a>
+            </p>
+           
+          
+            <p>
+              <span>下一篇</span>
+              <a href="/2026/09/25/windows-mic-muted/">麦克风没声音：注册表和音量合成器都查不到的那个静音标志</a>
+            </p>
+          
+        </div>
+      
+    </div>
+  </div>
+</div>
+
+
+
+<script>
+  $(document).on('pjax:complete', function() {
+    const tocs = document.querySelector('.toc')
+    const links = tocs ? tocs.querySelectorAll('a') : []
+    links.forEach(link => {
+      link.addEventListener('click', e => {
+        const href = decodeURIComponent(e.href)
+        href.search(/#(.*)/)
+        const id = RegExp.$1
+        const target = document.querySelector('#' + id)
+        const top = target.offsetTop
+        document.documentElement.scrollTo({
+          top: top - 100,
+          behavior: 'smooth'
+        })
+        e.preventDefault()
+      })
+    })
+  })
+</script> 
+
+</div>
+      <div class="main-right-wrapper"><div class="main-right">
+  <div class="main-right--board">
+    <div class="main-right--title">
+      <h5>公告栏</h5>
+      <i class="iconfont icon-gonggao"></i>
+    </div>
+    <div class="main-right--content">
+      这里记录我在实际开发中真实遇到的问题，以及最后怎么解决的。尽量把排查过程也写出来，包括走过的弯路。 
+    </div>
+  </div>
+
+  
+
+  <div class="operate-items">
+    <div class="operate-item backtop">
+      <i class="iconfont icon-huidaodingbu"></i>
+      <span>回到顶部</span>
+    </div>
+    
+  </div>
+
+  <div class="main-right--site">
+    <div class="main-right--power">
+      <p>Power By <a target="_blank" rel="noopener" href="https://hexo.io/zh-cn/docs/">Hexo</a>.</p>
+      <p>Theme：<a target="_blank" rel="noopener" href="https://github.com/Aizener/hexo-theme-cola">Cola.</a></p>
+    </div>
+    
+  </div>
+</div>
+
+<script>
+  function setOperateItem () {
+    const reg = /\d{4}\/\d{2}\/\d{2}\/.+/
+    const path = location.pathname
+    const operateDom = document.querySelector('.main-right .operate-items')
+    const commentDom = document.querySelector('.turn-comment')
+    const cateloguDom = document.querySelector('.article-catelogue > .article-catelogue--wrapper');
+
+    if (commentDom) {
+      if (reg.test(path) || path.match(/\/log\/.+/)) {
+        commentDom.classList.remove('hidden')
+        const newDom = operateDom.cloneNode(true);
+        const _backtopDom = newDom.querySelector('.backtop');
+        const _commentDom = newDom.querySelector('.turn-comment');
+        _backtopDom.addEventListener('click', () => backTopEvent());
+        _commentDom.addEventListener('click', () => commentDomEvent());
+        cateloguDom.appendChild(newDom);
+      } else {
+        commentDom.classList.add('hidden')
+      }
+    }
+  }
+
+  setOperateItem()
+  
+
+  $(document).on('pjax:complete', function() {
+    setOperateItem()
+  })
+
+  document.querySelector('.backtop').addEventListener('click', () => {
+    backTopEvent();
+  })
+  const dom = document.querySelector('.turn-comment')
+  dom && dom.addEventListener('click', () => {
+    commentDomEvent();
+  })
+
+  function backTopEvent() {
+    document.documentElement.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    })
+  }
+
+  function commentDomEvent() {
+    const commentDom = document.querySelector('.comments-intro')
+    if (!commentDom) return
+    const top = commentDom.offsetTop, height = commentDom.offsetHeight
+    document.documentElement.scrollTo({
+      top: top - 2 * height,
+      behavior: 'smooth'
+    })
+  }
+</script></div>
+    </section>
+  </div>
+  <div id="progress" class="progress"></div>
+  <div id="gray" class="gray"></div>
+
+  <script>
+    function initScroll () {
+      document.addEventListener('scroll', () => {
+        const doc = document.documentElement
+        const scrollTop = doc.scrollTop
+        const pageHeight = doc.offsetHeight
+        const clientHeight = doc.clientHeight
+        const ratio = scrollTop / (pageHeight - clientHeight)
+        const progress = document.querySelector('#progress')
+        const avatarImg = document.querySelector('.main-left--avatar')
+        progress.style.width = (100 * ratio) + '%'
+        avatarImg.style.transform = `rotate(${360 * ratio}deg)`
+      })
+    }
+
+    const rootPath = "/"
+
+    const checkAndSetArticlePageLayout = () => {
+      const path = location.pathname.replace(rootPath, '');
+      if (
+        /^\/?\d{4}\/\d{2}\/\d{2}\/.*/.test(path) ||
+        /^log\/.+/.test(path)
+      ) {
+        $('.main-container, .main-right, .main-right-wrapper').addClass('is-article')
+      } else {
+        $('.main-container, .main-right, .main-right-wrapper').removeClass('is-article')
+      }
+    }
+
+    const gray = "none"
+    const setGrayStyle = () => {
+      if (gray === 'none') {
+        return
+      } else if (gray === 'index') {
+        location.pathname === '/' ? $('#gray').show() : $('#gray').hide()
+      } else if (gray === 'all') {
+        $('#gray').show()
+      }
+    }
+    setGrayStyle()
+
+
+    window.onload = function () {
+      checkAndSetArticlePageLayout()
+      setTimeout(() => {
+        $('#load').slideUp()
+        $('#container').slideToggle()
+        setTimeout(() => {
+          initScroll();
+        }, 500)
+      }, 500)
+    }
+    
+    let status = 0
+    // 对所有链接跳转事件绑定pjax容器container
+    $(document).pjax('a[target!=_blank]', '#main-container', {
+      container: '#main-container',
+      fragment: '#main-container',
+      timeout: 8000
+    })
+
+    $(document).on('pjax:start', function() {
+    })
+    $(document).on('pjax:complete', function() {
+      status = 0
+      $('.main-container').addClass('to-up').on('animationend', function() {
+        $(this).removeClass('to-up')
+      })
+      setGrayStyle()
+      checkAndSetArticlePageLayout()
+    })
+    $(document).on('pjax:popstate', function() {
+      status = -1
+      checkAndSetArticlePageLayout()
+    });
+  </script>
+</body>
+</html>
