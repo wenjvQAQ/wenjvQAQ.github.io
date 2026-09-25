@@ -1,0 +1,30 @@
+<head>
+  <meta charset="utf-8">
+  <%
+    // 原主题把站点名硬编码成「我的技术与生活——」，会在标签页和搜索结果里
+    // 显示成别人的站名。这里改成读取 config.title。
+    const siteTitle = config.title || 'Blog'
+    const pageTitle = page.title || ''
+    // 首页只显示站点名；子页面显示「页面名 | 站点名」
+    const fullTitle = (pageTitle && pageTitle !== siteTitle)
+      ? `${pageTitle} | ${siteTitle}`
+      : siteTitle
+  %>
+  <title><%= fullTitle %></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="shortcut icon" href="<%- url_for('imgs/shortcut-icon.ico') %>" type="image/x-icon">
+  <link rel="stylesheet" href="<%- url_for('css/public.css') %>" />
+  <link rel="stylesheet" href="<%- url_for('css/layout.css') %>" />
+  <link rel="stylesheet" href="<%- url_for('css/iconfont.css') %>" />
+  <link rel="stylesheet" href="<%- url_for('css/APlayer.min.css') %>" />
+  <script src="<%- url_for('js/APlayer.min.js') %>"></script>
+  <script src="<%- url_for('js/jquery.min.js') %>"></script>
+  <script src="<%- url_for('js/jquery.pjax.min.js') %>"></script>
+
+  <% if (theme.comments && theme.comments.enable) { %>
+  <script src="//unpkg.com/valine/dist/Valine.min.js"></script>
+  <% } %>
+  <script>
+    document.title = <%- JSON.stringify(fullTitle) %>
+  </script>
+</head>

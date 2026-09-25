@@ -1,0 +1,146 @@
+# ============================================================
+#  NexT 主题配置
+#  完整可选项见 node_modules/hexo-theme-next/_config.yml
+#  这里只写需要覆盖的项
+# ============================================================
+
+# ---------------------------------------------------------- 外观
+scheme: Gemini
+
+# 深色模式（跟随系统 + 右上角手动切换）
+darkmode: true
+
+# 页面宽度，留白更舒服
+custom_file_path:
+  # variable: source/_data/variables.styl
+  # style: source/_data/styles.styl
+
+# 字体
+font:
+  enable: false
+
+# 代码块
+codeblock:
+  # 高亮主题：night-owl / atom-one-dark / dracula 都不错
+  highlight_theme: night-owl
+  copy_button:
+    enable: true
+    show_result: true
+  # 长代码自动折行
+  # wrap: true
+
+# ---------------------------------------------------------- 菜单
+menu:
+  home: / || fa fa-home
+  archives: /archives/ || fa fa-archive
+  categories: /categories/ || fa fa-th
+  tags: /tags/ || fa fa-tags
+  about: /about/ || fa fa-user
+
+# 菜单图标只在自己 hover 时显示
+menu_settings:
+  icons: true
+  badges: false
+
+# ---------------------------------------------------------- 侧边栏
+sidebar:
+  position: left
+  display: post        # 文章页显示，首页隐藏（更清爽）
+  # 回到顶部按钮
+  scrollpercent: true
+
+# 头像（可以换成你自己的图片，放到 source/uploads/ 下）
+avatar:
+  url: # /uploads/avatar.png
+  rounded: true
+  rotated: false
+
+# ---------------------------------------------------------- 社交链接
+social:
+  GitHub: https://github.com/wenjvQAQ || fab fa-github
+  E-Mail: mailto:a95565109@126.com || fa fa-envelope
+
+# ---------------------------------------------------------- 搜索
+local_search:
+  enable: true
+  trigger: auto          # 输入即搜
+  top_n_per_article: 1
+  unescape: false
+  preload: false
+
+# ---------------------------------------------------------- 文章
+post_meta:
+  posted: true
+  updated: false
+  categories: true
+  tags: true
+
+# 文末「阅读全文」按钮
+read_more_btn: true
+
+# 相关文章推荐
+related_posts:
+  enable: false
+
+# 打赏
+reward:
+  enable: false
+
+# 版权声明
+post_copyright:
+  enable: true
+  license: CC BY-NC-SA 4.0
+  license_url: https://creativecommons.org/licenses/by-nc-sa/4.0/
+
+# 上一篇 / 下一篇
+prev_next:
+  enable: true
+
+# ---------------------------------------------------------- 目录
+toc:
+  enable: true
+  number: false
+  wrap: false
+  expand: false
+  style: sidebar
+
+# ---------------------------------------------------------- 阅读进度
+reading_progress:
+  enable: true
+  color: "#37c6c0"
+  height: 2px
+
+# 回到顶部
+back2top:
+  enable: true
+  sidebar: false
+  scrollpercent: true
+
+# ---------------------------------------------------------- 其它
+# 页面底部
+footer:
+  since: 2026
+  icon:
+    name: fa fa-heart
+    animated: true
+    color: "#ff0000"
+  copyright:
+
+# 数学公式（暂时关掉，需要时开）
+math:
+  mathjax:
+    enable: false
+
+# 动画
+motion:
+  enable: true
+  async: false
+  transition:
+    post_block: fadeIn
+    post_header: fadeInDown
+    post_body: fadeIn
+    coll_header: fadeInLeft
+    sidebar: fadeInUp
+
+# 不显示 Hexo 的「强力驱动」
+powered_by: false
