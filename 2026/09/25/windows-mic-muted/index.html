@@ -194,7 +194,7 @@
   const ipt = document.querySelector('#search-input')
   const btn = document.querySelector('#search-btn')
   const layer = document.querySelector('#search-layer')
-  const posts = JSON.parse(`[{"title":"AirPlay 投屏「能搜到但连不上」——路由跃点数把广播送到了错误的网卡","cover":"imgs/covers/cover5.jpg","path":"2026/09/25/airplay-wrong-interface/"},{"title":"PySide6 最隐蔽的 bug：QObject worker 被垃圾回收，程序「什么都没发生」","cover":"imgs/covers/cover3.jpg","path":"2026/09/25/pyside6-qobject-worker-gc/"},{"title":"把 UxPlay 做成便携版：一次完整的依赖闭包打包","cover":"imgs/covers/cover2.jpg","path":"2026/09/25/uxplay-portable-package/"},{"title":"图片去重不止是 MD5：用感知哈希处理「相似但不相同」","cover":"imgs/covers/cover4.jpg","path":"2026/09/25/image-dedup-phash/"},{"title":"麦克风没声音：注册表和音量合成器都查不到的那个静音标志","cover":"imgs/covers/cover1.jpg","path":"2026/09/25/windows-mic-muted/"}]`)
+  const posts = JSON.parse(`[{"title":"AirPlay 投屏「能搜到但连不上」——路由跃点数把广播送到了错误的网卡","cover":"imgs/covers/cover5.jpg","path":"2026/09/25/airplay-wrong-interface/"},{"title":"PySide6 最隐蔽的 bug：QObject worker 被垃圾回收，程序「什么都没发生」","cover":"imgs/covers/cover3.jpg","path":"2026/09/25/pyside6-qobject-worker-gc/"},{"title":"图片去重不止是 MD5：用感知哈希处理「相似但不相同」","cover":"imgs/covers/cover4.jpg","path":"2026/09/25/image-dedup-phash/"},{"title":"把 UxPlay 做成便携版：一次完整的依赖闭包打包","cover":"imgs/covers/cover2.jpg","path":"2026/09/25/uxplay-portable-package/"},{"title":"麦克风没声音：注册表和音量合成器都查不到的那个静音标志","cover":"imgs/covers/cover1.jpg","path":"2026/09/25/windows-mic-muted/"}]`)
   ipt.addEventListener('keyup', e => {
     if (e.key === 'Enter') {
       handleSearch()
@@ -567,7 +567,7 @@
 
   setOperateItem()
   
-  const musics = JSON.parse(`[{"name":"突然的陀螺","artist":"UR","url":"https://music.163.com/song/media/outer/url?id=3391667716.mp3","cover":"https://p1.music.126.net/WlISdpwXFxaVHJjo8n4Wfg==/109951173355866202.jpg"},{"name":"蜘蛛糸モノポリー","artist":"sasakure.UK / 初音ミク","url":"https://music.163.com/song/media/outer/url?id=26440351.mp3","cover":"https://p1.music.126.net/b6cwIaAUy5MXSm3iNC0KNg==/109951163352158677.jpg"}]`)
+  const musics = JSON.parse(`[{"name":"突然的陀螺","artist":"UR","url":"https://m701.music.126.net/20260925163746/5b58ec1963d75a808ecb9157bbf22465/jdymusic/obj/wo3DlMOGwrbDjj7DisKw/80762698888/6c00/a9e5/53d3/71253a9c88eb42a86a2e255615a0308a.mp3","cover":"https://p1.music.126.net/WlISdpwXFxaVHJjo8n4Wfg==/109951173355866202.jpg"},{"name":"蜘蛛糸モノポリー","artist":"sasakure.UK / 初音ミク","url":"https://m10.music.126.net/20260925163746/eacda1f221f5a1032ea68ccbd0977d2e/ymusic/d971/09e9/8e2d/481fe9cc01c508917c9cbecc0402cb8f.mp3","cover":"https://p1.music.126.net/b6cwIaAUy5MXSm3iNC0KNg==/109951163352158677.jpg"}]`)
   const ap = new APlayer({
     container: document.querySelector('#aplayer'),
     audio: musics,
