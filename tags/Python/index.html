@@ -194,7 +194,7 @@
   const ipt = document.querySelector('#search-input')
   const btn = document.querySelector('#search-btn')
   const layer = document.querySelector('#search-layer')
-  const posts = JSON.parse(`[{"title":"AirPlay 投屏「能搜到但连不上」——路由跃点数把广播送到了错误的网卡","path":"2026/09/25/airplay-wrong-interface/"},{"title":"PySide6 最隐蔽的 bug：QObject worker 被垃圾回收，程序「什么都没发生」","path":"2026/09/25/pyside6-qobject-worker-gc/"},{"title":"把 UxPlay 做成便携版：一次完整的依赖闭包打包","path":"2026/09/25/uxplay-portable-package/"},{"title":"图片去重不止是 MD5：用感知哈希处理「相似但不相同」","path":"2026/09/25/image-dedup-phash/"},{"title":"麦克风没声音：注册表和音量合成器都查不到的那个静音标志","path":"2026/09/25/windows-mic-muted/"}]`)
+  const posts = JSON.parse(`[{"title":"AirPlay 投屏「能搜到但连不上」——路由跃点数把广播送到了错误的网卡","cover":"imgs/covers/cover5.jpg","path":"2026/09/25/airplay-wrong-interface/"},{"title":"PySide6 最隐蔽的 bug：QObject worker 被垃圾回收，程序「什么都没发生」","cover":"imgs/covers/cover3.jpg","path":"2026/09/25/pyside6-qobject-worker-gc/"},{"title":"麦克风没声音：注册表和音量合成器都查不到的那个静音标志","cover":"imgs/covers/cover1.jpg","path":"2026/09/25/windows-mic-muted/"},{"title":"图片去重不止是 MD5：用感知哈希处理「相似但不相同」","cover":"imgs/covers/cover4.jpg","path":"2026/09/25/image-dedup-phash/"},{"title":"把 UxPlay 做成便携版：一次完整的依赖闭包打包","cover":"imgs/covers/cover2.jpg","path":"2026/09/25/uxplay-portable-package/"}]`)
   ipt.addEventListener('keyup', e => {
     if (e.key === 'Enter') {
       handleSearch()
@@ -353,9 +353,9 @@
   <div class="index-left">
     
       <div class="index-article">
-        <!-- <img class="index-article--cover" src="/imgs/default-cover.webp" alt=""> -->
-        <div class="index-article--box">
-          <img class="index-article--cover" data-cover="imgs/default-cover.webp" alt="图片去重不止是 MD5：用感知哈希处理「相似但不相同」" />
+        <!-- <img class="index-article--cover" src="/imgs/covers/cover4.jpg" alt=""> -->
+        <div class="index-article--box" style="background-image:url('/imgs/covers/cover4.jpg')">
+          <img class="index-article--cover" data-cover="imgs/covers/cover4.jpg" alt="图片去重不止是 MD5：用感知哈希处理「相似但不相同」" />
         </div>
         <div class="index-article--content">
           <a href="/2026/09/25/image-dedup-phash/">图片去重不止是 MD5：用感知哈希处理「相似但不相同」 </a>
@@ -379,9 +379,9 @@
   <div class="index-center">
     
       <div class="index-article">
-        <!-- <img class="index-article--cover" data-cover="" src="/imgs/default-cover.webp" alt=""> -->
-        <div class="index-article--box">
-          <img class="index-article--cover" data-cover="imgs/default-cover.webp" alt="PySide6 最隐蔽的 bug：QObject worker 被垃圾回收，程序「什么都没发生」" />
+        <!-- <img class="index-article--cover" data-cover="imgs/covers/cover3.jpg" src="/imgs/covers/cover3.jpg" alt=""> -->
+        <div class="index-article--box" style="background-image:url('/imgs/covers/cover3.jpg')">
+          <img class="index-article--cover" data-cover="imgs/covers/cover3.jpg" alt="PySide6 最隐蔽的 bug：QObject worker 被垃圾回收，程序「什么都没发生」" />
         </div>
         <div class="index-article--content">
           <a href="/2026/09/25/pyside6-qobject-worker-gc/">PySide6 最隐蔽的 bug：QObject worker 被垃圾回收，程序「什么都没发生」 </a>

@@ -171,7 +171,8 @@
 .index-article:hover .index-article--content {
   height: 100%;
   background-color: rgba(0,0,0,0.3);
-  backdrop-filter: blur(3px);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
 }
 .index-article:hover .index-article--content > div {
   height: auto;
@@ -219,6 +220,8 @@
   object-fit: cover;
   position: absolute;
   transition: all 0.3s;
+  filter: blur(1.5px) saturate(1.08);
+  transform: scale(1.04);
 }
 .index-article--content {
   position: absolute;
@@ -232,6 +235,9 @@
   z-index: 2;
   transition: all 0.3s;
   background-color: rgba(0,0,0,0.2);
+  backdrop-filter: blur(10px) saturate(1.4);
+  -webkit-backdrop-filter: blur(10px) saturate(1.4);
+  box-shadow: 0 -1px 0 rgba(255,255,255,0.12) inset;
 }
 .index-article--content > a {
   color: #fff;
