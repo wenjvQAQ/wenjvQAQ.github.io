@@ -10,22 +10,29 @@
  *    （DIAG 显示 exists=false），删了等于没删。这里挂在进程退出时，
  *    此时文件才真正写完。
  *
- * 想恢复主题自带音频就删掉本文件。
+ * ⚠️ 用黑名单而不是「删掉整个 music/」：博客自己的歌就放在
+ *    themes/cola/source/music/ 下（网络直链会过期或者被混合内容拦，
+ *    详见 theme 配置里的说明），不能一起删掉。
  */
 const fs = require('fs');
 const path = require('path');
 
-// public/ 下的相对路径黑名单
-const BLOCKED = [
-  'music',                       // 主题自带的 mp3 目录，整个不要
+// 只删这些明确的文件（public/ 下的相对路径）
+const BLOCKED_FILES = [
+  'music/kabuda.mp3',
+  'music/八连杀.mp3',
 ];
 
-// 额外按扩展名兜底拦截（防止别处又冒出音频）
-const BLOCKED_EXT = ['.mp3', '.flac', '.wav', '.m4a', '.ape'];
+// 按扩展名兜底：这些后缀一律不发布
+const BLOCKED_EXT = ['.flac', '.wav', '.m4a', '.ape', '.wma'];
 
 function rm(p) {
   if (!fs.existsSync(p)) return false;
-  fs.rmSync(p, { recursive: true, force: true });
+  if (fs.statSync(p).isDirectory()) {
+    fs.rmSync(p, { recursive: true, force: true });
+  } else {
+    fs.unlinkSync(p);
+  }
   return true;
 }
 
@@ -45,14 +52,14 @@ hexo.on('exit', function () {
   try {
     if (!fs.existsSync(pub)) return;
 
-    for (const rel of BLOCKED) {
+    for (const rel of BLOCKED_FILES) {
       if (rm(path.join(pub, rel))) {
         hexo.log.info('清理发布目录: %s', rel);
         removed++;
       }
     }
 
-    // 兜底：扫一遍 public 里残留的音频文件
+    // 兜底：扫一遍 public 里不该发布的其它音频格式
     for (const f of walk(pub)) {
       hexo.log.info('清理发布目录: %s', path.relative(pub, f).replace(/\\/g, '/'));
       rm(f);

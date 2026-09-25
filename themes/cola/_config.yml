@@ -46,19 +46,25 @@ notice: 这里记录我在实际开发中真实遇到的问题，以及最后怎
 
 # 右侧音乐播放器：[歌名, 作者, 音频链接, 封面]
 #
-# ⚠️ 不要用 https://music.163.com/song/media/outer/url?id=xxx.mp3 这种写法。
-#    它在 curl 里能 302，但在浏览器里会 MEDIA_ELEMENT_ERROR: Format error。
-#    原因：302 的 Location 是 http://mXXX.music.126.net/...（明文），
-#    页面在 https 下会被按混合内容处理；而且这个跳转本身对
-#    <audio> 的 media 请求不友好（fetch 直接 Failed to fetch）。
+# ⚠️ 音频必须用博客自己的本地文件，不要链网易云。
 #
-#    正确做法：用 CDN 直链，并且把协议改成 https。
-#    实测这些直链即使去掉 ?vuutv=... 签名参数也照样 200，
-#    路径里的日期段也不是过期凭证（隔了 15 分钟仍然可播）。
-#    如果哪天真的失效了，用 outer/url 重新抓一次 Location 换进去即可。
+#    试过两种外链写法，在 https 页面上都不能用：
+#
+#    1) 静态 CDN 直链 —— 会过期。路径里带签发时间戳，
+#       过期后返回 403（实测：签好时 200、约 20 分钟后 403），
+#       播放器就报 "An audio error has occurred"。
+#
+#    2) /song/media/outer/url?id=xxx.mp3 —— 虽然每次都动态签发新直链，
+#       但 302 的 Location 是 http://mXXX.music.126.net/...（明文），
+#       https 页面下会被按混合内容拦掉，实测在真实浏览器里同样播不了
+#       （卡在 00:00/00:00，控制台报 Failed to load resource）。
+#
+#    所以这两首歌已经下载到 themes/cola/source/music/ 下面，
+#    用相对路径引用，随博客一起部署，不会再失效。
+#    封面仍用网易云的专辑图（图片没有这些问题）。
 musics:
-  - ['突然的陀螺', 'UR', 'https://m701.music.126.net/20260925163746/5b58ec1963d75a808ecb9157bbf22465/jdymusic/obj/wo3DlMOGwrbDjj7DisKw/80762698888/6c00/a9e5/53d3/71253a9c88eb42a86a2e255615a0308a.mp3', 'https://p1.music.126.net/WlISdpwXFxaVHJjo8n4Wfg==/109951173355866202.jpg']
-  - ['蜘蛛糸モノポリー', 'sasakure.UK / 初音ミク', 'https://m10.music.126.net/20260925163746/eacda1f221f5a1032ea68ccbd0977d2e/ymusic/d971/09e9/8e2d/481fe9cc01c508917c9cbecc0402cb8f.mp3', 'https://p1.music.126.net/b6cwIaAUy5MXSm3iNC0KNg==/109951163352158677.jpg']
+  - ['突然的陀螺', 'UR', 'music/tudou-de-tuoluo.mp3', 'https://p1.music.126.net/WlISdpwXFxaVHJjo8n4Wfg==/109951173355866202.jpg']
+  - ['蜘蛛糸モノポリー', 'sasakure.UK / 初音ミク', 'music/kumonosu-monopoly.mp3', 'https://p1.music.126.net/b6cwIaAUy5MXSm3iNC0KNg==/109951163352158677.jpg']
 
 # 个人介绍（显示在「关于自己」页）
 # 这一块在首页是整体隐藏的，见 index.styl 的 .main-left--statics.none

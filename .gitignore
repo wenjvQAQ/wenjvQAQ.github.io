@@ -18,9 +18,12 @@ _theme_backup/
 # ---- 音频 ----
 # cola 主题自带两个 mp3（kabuda.mp3 是有版权的特摄原声，
 # 八连杀.mp3 是低俗网络歌曲），不进仓库、也不发布到 Pages。
-# 构建时由 scripts/clean-publish.js 从 public/ 里再清一次。
-themes/cola/source/music/
-*.mp3
+# 构建时由 scripts/clean-publish.js 按文件名精确删除。
+#
+# ⚠️ 注意：这里不能写 *.mp3 —— 博客自己的音乐（音乐播放器用的）就放在
+#    themes/cola/source/music/ 下，需要一起提交和部署。
+themes/cola/source/music/kabuda.mp3
+themes/cola/source/music/八连杀.mp3
 *.flac
 *.wav
 *.m4a
