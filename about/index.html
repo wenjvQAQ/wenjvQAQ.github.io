@@ -194,7 +194,7 @@
   const ipt = document.querySelector('#search-input')
   const btn = document.querySelector('#search-btn')
   const layer = document.querySelector('#search-layer')
-  const posts = JSON.parse(`[{"title":"AirPlay 投屏「能搜到但连不上」——路由跃点数把广播送到了错误的网卡","cover":"imgs/covers/cover5.jpg","path":"2026/09/25/airplay-wrong-interface/"},{"title":"PySide6 最隐蔽的 bug：QObject worker 被垃圾回收，程序「什么都没发生」","cover":"imgs/covers/cover3.jpg","path":"2026/09/25/pyside6-qobject-worker-gc/"},{"title":"麦克风没声音：注册表和音量合成器都查不到的那个静音标志","cover":"imgs/covers/cover1.jpg","path":"2026/09/25/windows-mic-muted/"},{"title":"图片去重不止是 MD5：用感知哈希处理「相似但不相同」","cover":"imgs/covers/cover4.jpg","path":"2026/09/25/image-dedup-phash/"},{"title":"把 UxPlay 做成便携版：一次完整的依赖闭包打包","cover":"imgs/covers/cover2.jpg","path":"2026/09/25/uxplay-portable-package/"}]`)
+  const posts = JSON.parse(`[{"title":"AirPlay 投屏「能搜到但连不上」——路由跃点数把广播送到了错误的网卡","cover":"imgs/covers/cover5.jpg","path":"2026/09/25/airplay-wrong-interface/"},{"title":"PySide6 最隐蔽的 bug：QObject worker 被垃圾回收，程序「什么都没发生」","cover":"imgs/covers/cover3.jpg","path":"2026/09/25/pyside6-qobject-worker-gc/"},{"title":"把 UxPlay 做成便携版：一次完整的依赖闭包打包","cover":"imgs/covers/cover2.jpg","path":"2026/09/25/uxplay-portable-package/"},{"title":"图片去重不止是 MD5：用感知哈希处理「相似但不相同」","cover":"imgs/covers/cover4.jpg","path":"2026/09/25/image-dedup-phash/"},{"title":"麦克风没声音：注册表和音量合成器都查不到的那个静音标志","cover":"imgs/covers/cover1.jpg","path":"2026/09/25/windows-mic-muted/"}]`)
   ipt.addEventListener('keyup', e => {
     if (e.key === 'Enter') {
       handleSearch()
@@ -375,28 +375,13 @@
     </div>
   </div>
   <div class="about-content">
-    <h2 id="关于这个博客"><a href="#关于这个博客" class="headerlink" title="关于这个博客"></a>关于这个博客</h2><p>这里记录我在实际开发和折腾中<strong>真实遇到的问题</strong>，以及最后怎么解决的。</p>
-<p>写这些东西的原因很简单：网上很多教程只给结论不给过程，照着做经常跑不通——因为环境和版本不一样。所以这里尽量把<strong>排查过程</strong>也写出来，包括走过的弯路。</p>
-<h2 id="写什么"><a href="#写什么" class="headerlink" title="写什么"></a>写什么</h2><p>主要三类：</p>
-<ul>
-<li><strong>踩坑记录</strong> —— 一个具体的 bug，从症状到根因到修复</li>
-<li><strong>工具折腾</strong> —— 打包、配置、环境搭建</li>
-<li><strong>逆向与分析</strong> —— 理解一个系统是怎么工作的</li>
-</ul>
-<p>判断标准是：<strong>这个问题我自己花了超过半小时才解决</strong>，就值得写。半小时以内的查文档就行。</p>
-<h2 id="我的原则"><a href="#我的原则" class="headerlink" title="我的原则"></a>我的原则</h2><p>排查问题时，我尽量做到这几点：</p>
-<ol>
-<li><strong>先验证假设再动手</strong>。不要因为「看起来像」就直接改。</li>
-<li><strong>把中间结果打印出来</strong>。很多问题是在看数据时才暴露的。</li>
-<li><strong>区分「没报错」和「正常」</strong>。静默失败比崩溃难查得多。</li>
-<li><strong>用数据定参数，不拍脑袋</strong>。比如阈值该取多少，算出分布就知道了。</li>
-</ol>
+    <h2 id="关于这个博客"><a href="#关于这个博客" class="headerlink" title="关于这个博客"></a>关于这个博客</h2><p>文具（wenjv3903）<br>一个高中生，就读于广州市第二中学南沙天元学校<br>平常喜欢打王牌竞速，F1系列等等还有明日方舟&#x2F;终末地和bangdream<br>反正也是条区<br>哦对了，一般来说技术类的都是dp写的，除非是我记录我的做题思路</p>
 <h2 id="联系"><a href="#联系" class="headerlink" title="联系"></a>联系</h2><ul>
 <li>GitHub: <a target="_blank" rel="noopener" href="https://github.com/wenjvQAQ">wenjvQAQ</a></li>
-<li>Email: <a href="mailto:&#x61;&#x39;&#x35;&#x35;&#54;&#x35;&#x31;&#x30;&#57;&#64;&#x31;&#50;&#x36;&#46;&#x63;&#x6f;&#109;">&#x61;&#x39;&#x35;&#x35;&#54;&#x35;&#x31;&#x30;&#57;&#64;&#x31;&#50;&#x36;&#46;&#x63;&#x6f;&#109;</a></li>
+<li>Email: <a href="mailto:&#x61;&#57;&#53;&#x35;&#x36;&#53;&#x31;&#48;&#x39;&#x40;&#x31;&#x32;&#x36;&#x2e;&#99;&#x6f;&#109;">&#x61;&#57;&#53;&#x35;&#x36;&#53;&#x31;&#48;&#x39;&#x40;&#x31;&#x32;&#x36;&#x2e;&#99;&#x6f;&#109;</a></li>
+<li>QQ:95565109</li>
 </ul>
-<h2 id="声明"><a href="#声明" class="headerlink" title="声明"></a>声明</h2><p>本站文章均为个人笔记，欢迎参考，转载请注明出处。</p>
-<p>文中涉及的第三方软件和 API 仅用于技术学习，请遵守相应服务的使用条款。</p>
+<h2 id="声明"><a href="#声明" class="headerlink" title="声明"></a>声明</h2><p>都是写着玩的</p>
 
   </div>
 </div>
